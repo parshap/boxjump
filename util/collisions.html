@@ -1,0 +1,125 @@
+<!doctype html>
+<html>
+	<head>
+		<style type="text/css">
+			#container {
+				width: 500px;
+				height: 500px;
+				border: 2px solid black;
+				position: relative;
+			}
+
+			#container div {
+				border: 1px dotted black;
+				position: absolute;
+			}
+
+			#container div.collided {
+				background: rgba(200, 40, 40, 0.5);
+			}
+		</style>
+	</head>
+
+	<body>
+		<div id="container"></div>
+
+		<script type="text/javascript" src="../build/physics.js"></script>
+		<script type="text/javascript">
+var rectCords = [],
+	container = document.getElementById("container"),
+	rects = [];
+
+function doCollision(r) {
+	// Reset collided list
+	r.forEach(function(rect) {
+		rect.div.className = "";
+	});
+
+	r.forEach(function(rect) {
+		var rest = rects.slice(0);
+		rest.splice(rest.indexOf(rect), 1);
+
+		var collided = G.Physics.Collision.collide(
+			rect,
+			{ x: 0, y: 0 },
+			rest
+		);
+
+		if (collided.length) {
+			collided.forEach(function(rect) {
+				rect.div.className = "collided";
+			});
+			rect.div.className = "collided";
+		}
+	});
+}
+
+function createRect(p1, p2) {
+	var rect = new G.Physics.Rect.fromPoints(p1, p2);
+	createDiv(rect);
+	rects.push(rect);
+
+	return rect;
+}
+
+function createDiv(rect) {
+	rect.div = document.createElement("div");
+
+	setDivProps(rect);
+
+	container.appendChild(rect.div);
+}
+
+function setDivProps(rect) {
+	var sides = rect.sides();
+
+	rect.div.style.left = sides.left + "px";
+	rect.div.style.top = sides.top + "px";
+	rect.div.style.width = rect.width + "px";
+	rect.div.style.height = rect.height + "px";
+
+	doCollision([rect]);
+}
+
+// Drag to create
+(function() {
+	var div = document.getElementById("container"),
+		downPos = { x: null, y: null },
+		rect = null;
+
+	function getPos(e) {
+		return {
+			x: e.clientX - div.offsetLeft - div.clientLeft,
+			y: e.clientY - div.offsetTop - div.clientTop
+		};
+	}
+
+	div.addEventListener("mousedown", function(e) {
+		downPos = getPos(e);
+		rect = createRect(downPos, downPos);
+	});
+
+	div.addEventListener("mousemove", function(e) {
+		if (rect) {
+			var pos = getPos(e);
+			rect.width = pos.x - downPos.x;
+			rect.height = pos.y - downPos.y;
+			rect.x = (pos.x + downPos.x) / 2;
+			rect.y = (pos.y + downPos.y) / 2;
+
+			console.log(rect);
+
+			setDivProps(rect);
+		}
+	});
+
+	div.addEventListener("mouseup", function(e) {
+		rect = null;
+	});
+}())
+
+createRect({ x: 100, y: 100 }, { x: 400, y: 400});
+createRect({ x: 200, y: 10 }, { x: 300, y: 20});
+		</script>
+	</body>
+</html>

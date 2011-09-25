@@ -20,6 +20,9 @@ Adds the given element to the world.
 ### remove(element)
 Removes the given element from the world.
 
+### elements
+A list of the elements in the world.
+
 
 ## Elements.Element
 
