@@ -3,19 +3,36 @@
 	<head>
 		<style type="text/css">
 			#container {
-				width: 500px;
-				height: 500px;
-				border: 2px solid black;
-				position: relative;
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+
+				-webkit-user-select: none;
+				-khtml-user-select: none;
+				-moz-user-select: none;
+				-o-user-select: none;
+				user-select: none;
 			}
 
 			#container div {
 				border: 1px dotted black;
 				position: absolute;
+				cursor: pointer;
+				background: rgba(200, 200, 200, 0.1);
+			}
+
+			#container div:hover {
+				background: rgba(255, 255, 100, 0.2);
 			}
 
 			#container div.collided {
-				background: rgba(200, 40, 40, 0.5);
+				background: rgba(255, 40, 40, 0.5);
+			}
+
+			#container div.collided:hover {
+				background: rgba(255, 80, 40, 0.5);
 			}
 		</style>
 	</head>
@@ -23,103 +40,10 @@
 	<body>
 		<div id="container"></div>
 
+		<script type="text/javascript" src="//documentcloud.github.com/underscore/underscore-min.js"></script>
+		<script type="text/javascript" src="../build/index.js"></script>
+		<script type="text/javascript" src="../build/world.js"></script>
 		<script type="text/javascript" src="../build/physics.js"></script>
-		<script type="text/javascript">
-var rectCords = [],
-	container = document.getElementById("container"),
-	rects = [];
-
-function doCollision(r) {
-	// Reset collided list
-	r.forEach(function(rect) {
-		rect.div.className = "";
-	});
-
-	r.forEach(function(rect) {
-		var rest = rects.slice(0);
-		rest.splice(rest.indexOf(rect), 1);
-
-		var collided = G.Physics.Collision.collide(
-			rect,
-			{ x: 0, y: 0 },
-			rest
-		);
-
-		if (collided.length) {
-			collided.forEach(function(rect) {
-				rect.div.className = "collided";
-			});
-			rect.div.className = "collided";
-		}
-	});
-}
-
-function createRect(p1, p2) {
-	var rect = new G.Physics.Rect.fromPoints(p1, p2);
-	createDiv(rect);
-	rects.push(rect);
-
-	return rect;
-}
-
-function createDiv(rect) {
-	rect.div = document.createElement("div");
-
-	setDivProps(rect);
-
-	container.appendChild(rect.div);
-}
-
-function setDivProps(rect) {
-	var sides = rect.sides();
-
-	rect.div.style.left = sides.left + "px";
-	rect.div.style.top = sides.top + "px";
-	rect.div.style.width = rect.width + "px";
-	rect.div.style.height = rect.height + "px";
-
-	doCollision([rect]);
-}
-
-// Drag to create
-(function() {
-	var div = document.getElementById("container"),
-		downPos = { x: null, y: null },
-		rect = null;
-
-	function getPos(e) {
-		return {
-			x: e.clientX - div.offsetLeft - div.clientLeft,
-			y: e.clientY - div.offsetTop - div.clientTop
-		};
-	}
-
-	div.addEventListener("mousedown", function(e) {
-		downPos = getPos(e);
-		rect = createRect(downPos, downPos);
-	});
-
-	div.addEventListener("mousemove", function(e) {
-		if (rect) {
-			var pos = getPos(e);
-			rect.width = pos.x - downPos.x;
-			rect.height = pos.y - downPos.y;
-			rect.x = (pos.x + downPos.x) / 2;
-			rect.y = (pos.y + downPos.y) / 2;
-
-			console.log(rect);
-
-			setDivProps(rect);
-		}
-	});
-
-	div.addEventListener("mouseup", function(e) {
-		rect = null;
-	});
-}())
-
-createRect({ x: 100, y: 100 }, { x: 400, y: 400});
-createRect({ x: 200, y: 10 }, { x: 300, y: 20});
-		</script>
+		<script type="text/javascript" src="build/collisions.js"></script>
 	</body>
 </html>
