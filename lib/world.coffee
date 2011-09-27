@@ -1,5 +1,33 @@
 G = window.G
 
+# A 2d vector
+class G.Vector
+	@zero: -> return new @ 0, 0
+
+	constructor: ({@x, @y}) ->
+
+	equals: ({x, y}) ->	return @x == x and @y == y
+
+	length: -> return Math.sqrt @x * @x + @y * @y
+
+	add: ({x, y}) -> return new G.Vector @x + x, @y + y
+
+	sub: ({x, y}) -> return new G.Vector @x - x, @y - y
+
+	mul: (k) -> return new G.Vector @x * k, @y * k
+
+	div: (k) -> return new G.vector @x / k, @y / k
+
+	negate: -> return @mul -1
+
+	normalize: -> return @div @length
+
+	dot: ({x, y}) -> return @x * x + @y * y
+
+	slope: -> return @y / @x
+
+	toString: -> return "<#{@x},#{@y}>"
+
 
 # G.Event
 #
@@ -104,24 +132,28 @@ class G.Model extends G.Event
 
 		# Translated objects
 		tObjects = (object.translate(v) for object in @objects())
-		collision = null
 
+		# List of objects we would collide with
+		collisions = []
+
+		# Get the objects of the first model we collide with
 		models.forEach (model) =>
-			return if collision
+			return if collisions.length
 
 			oobjects = model.objects()
-			for translated in tObjects
-				for oobject in oobjects
-					if translated.colliding([oobject]).length
-						collision = oobject
 
-		if collision
+			for translated in tObjects
+				collisions = translated.colliding oobjects
+				break if collisions.length
+
+		if collisions.length > 1
+			console.log "Denying complex movement"
+			return
+
+		if collision = collisions[0]
 			# @todo: prevent infinite recursiong
-			resolve = object.resolve v, collision
-			console.log "resolved movement: ", resolve.x, resolve.y
 			return @move object.resolve(v, collision), models
 
-		console.log "moving", v.x, v.y
 		@set {
 			x: @get("x") + v.x
 			y: @get("y") + v.y
