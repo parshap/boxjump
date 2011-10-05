@@ -1,44 +1,250 @@
-# Introduction
-*Elements* is a *2D physics* library written in CoffeeScript (for use in
-JavaScript environments) providing *rigid body* collision detection and
-resolution.
+# Components
 
-There are two basic building blocks in *Elements*: a *world* and the
-*element*s it contains. A *world* is essentially a collection of
-*element*s that may interact with each other (i.e., may collide).
-*Element*s are geometric shapes with an *(x, y)* coordinate to define
-the location of the element in the world.
+ * App
+ * Game
+ * Physics
+ * Renderer
+ * Net
 
 
-# API
+## Application
 
-## Elements.World
+The *Application* component sets up the other components, handles application
+states and the update loop. The *Server* and *Client* each have a separate
+implementation of this component
 
-### add(element)
-Adds the given element to the world.
+While the client and server both run a game world, there exist some
+fundamental differences in their behaviors.
 
-### remove(element)
-Removes the given element from the world.
+ * The server is authoritative over the state of the game and processes
+   all input to the game state. As the game state changes, the server
+   sends updates to clients, which are simulating (as best as possible)
+   the server's version of the world.
 
-### elements
-A list of the elements in the world.
+ * The client and server employ different techniques for hiding and
+   lessening the affects of network latency.
+
+ * The client sends input directly to the server instead of processing
+   it with the local game state. To give immediate response to the user,
+   it may also predict the outcome of the sent input.
 
 
-## Elements.Element
+### Server
+In each update, the server will:
 
-### move(x, y)
-Attempts to move the element to the given *x* and *y* coordinates in the
-world. If the movement causes a collision, collision resolution will be
-performed. The element `move` is called in is guaranteed to be the only
-element moved (as a result of the move and/or collision resolution). The
-*x* and *y* attributes will be updated to reflect any movement.
+ * Process input from clients
+ * Update the game state
+ * Send any output to clients
 
-### x
-The x coordinate of the element's center in the world.
 
-### y
-The y coordinate of the element's center in the world.
+### Client
 
-### world
-The world the element belongs to. Elements can only belong to one world
-at a time.
+Set up the network, connecting to the server.
+
+In each update, the client will:
+
+ * Process any input from input devices
+ * Process any input from the server
+ * Interpolate/extrapolate any game state from updates
+ * Update the game state
+ * Send any output to the server
+ * Render the current game state
+
+
+#### Interpolating
+The client simulates the world at some point in the past. This amount of time
+is referred to as the *lerp* time. This is done in an attempt to disguise the
+affects of network latency.
+
+When the client is updating the world at some time, it should already know
+about the game's state at some other time in the future. It uses this future
+state and a previously known one (from the past) to interpolate the state at
+the current time.
+
+Only a subset of the client's game state is updated this special manner. The
+rest is updated normally.
+
+#### Rendering
+In practice, updating and rendering are more tightly coupled. The rendering
+system (views) listen for events from the game state (models) to update the
+visual state. The render step will perform any additional tasks to output
+the updated visual state.
+
+## Game
+
+The *Game* component represents the game simulation (the world, models, logic,
+etc.).
+
+This component uses the *Physics* component to simulate the physical
+properties of the game (e.g., collision).
+
+
+### Prediction
+While the client is designed to send its input to the game state
+directly to the server, it may also attempt to predict the outcome of
+that input and render it immediately to the client.
+
+As the server receives the input and sends game updates as a response,
+the client should correct any error in the prediction and conform to the
+server's authoritative response.
+
+## Physics
+
+The *Physics* component simulates a subset of the game state that requires
+physics calculations (e.g., collision tests, movement, gravity).
+
+## Renderer
+
+## Net
+
+The *Net* component handles communication between the client and the server.
+This component is split into two sub-components: the server and the client.
+
+### Server
+
+ * Listens for new connections from clients
+ * Sends and receives messages from clients
+
+### Client
+
+ * Opens and maintains a connection to the server
+ * Send and receive messages from the server
+
+### Messages
+
+All messages share a common format. They have a 1-byte message ID, and
+optional additional typed parameters.
+
+
+#### JoinRequest (`0x01`)
+
+#### JoinResponse (`0x02`)
+This message is sent as a successful reply to a Join Request message.
+The only parameter is given the joining player's playerid.
+
+#### PlayerInput (`0x00`)
+This message is sent from clients to the server to inform the server of
+the sending client's player's input state. This message has a single
+parameter which is a 1-byte integer who's rightmost 4 bits represent the
+current state of the player's input.
+
+The following input states are represented by each bit in order (from
+left to right). An example to how to read the truthy value having an
+integer value represented in the variable `value`.
+
+ * Up: `value & (1 << 3)`
+ * Right: `value & (1 << 2)`
+ * Down: `value & (1 << 1)`
+ * Left: `value & (1 << 0)`
+
+#### GameState (`0x01`)
+This message is sent from the server to the clients to inform them about
+the current game state. This message contains the positions and
+velocities of each player in the game.
+
+The first parameter is the game time this state information is from.
+An additional five parameters are sent for each player:
+
+ * Player ID
+ * X position
+ * Y position
+ * X velocity
+ * Y velocity
+
+### Encoding
+
+All messages are encoded using the [MessagePack](http://msgpack.org)
+format. Each message is represented as an array with the first element
+being the 1-byte message ID and the remaining elements being any message
+parameters.
+
+
+### Time Synchronization
+
+
+# Todo
+
+ * Some game state needs to be advanced client-side to account for latency.
+    * What about other players? If a rocket is advanced to account for the
+      player's movement, it won't look right colliding with another player.
+    * Should the person creating the rocket see it advanced? They need to see
+      it collide with other players!
+
+# Network
+
+lerp=100ms
+trip=50ms
+
+ - None
+ - Interpolation
+ - Lag Compensation
+ - Interpolation & Lag Compensation
+
+
+## TODO
+
+ * Synchronized time http://www.codewhore.com/howto1.html
+
+ * Packet encoding
+
+ * The server needs to send periodic state updates, but also needs to send
+   a packet *NOW* - should they piggyback? when?
+
+
+
+# Physics
+
+Body - a rigid body with the shape of an aabb (x, y, w, h)
+    - filter what it can collide with
+    - ? restitution (1: reverse velocity on collision, 0: velocity=0)
+    - sensor: detect collision, but no response
+    - have position and velocity; can apply force and impulse
+    - contact vs touch
+
+ContactConstraint - prevents penetration of bodies
+World - collection of bodies and constraints that interact togethe
+
+
+physics advance algorithm:
+
+ - for each body
+   move body
+   - pos = pos + 0.5*v*dt
+   - v = v + a*dt
+   - pos = pos + 0.5 * v * dt
+
+   check for collisions at new position (and fire collision:before?)
+   
+   if not sensor
+       resolve any broken contact constraints
+       
+       fire any touch/notouch events (for changes)
+
+   if sensor
+       fire any collision/nocollision events (for changes)
+
+
+Challenges:
+
+## left/right controls
+
+moveRightV = body.velocity({x: 500, y: 0})
+
+right = (active) ->
+    if active then moveRightV.enable() else moveRightV.disable()
+
+
+## jump velocity mechanics
+
+must consider how left/right controls work for initial velocity
+
+@todo
+
+## collision start and end events
+
+## client needs to store two states at a time
+and interpolate between them
+
+world.state() for getting/setting ?
+
+## server does hit tests against rewinded world (- rtt - lerp)
