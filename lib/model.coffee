@@ -1,11 +1,9 @@
+_ = require "underscore"
 Event = require("./event").Event
 
+
 exports.Model = class Model extends Event
-	defaults:
-		x: 0
-		y: 0
-		width: 0
-		height: 0
+	defaults: {}
 
 	constructor: (options = {}) ->
 		super()
