@@ -1,0 +1,11 @@
+{
+	"name": "game",
+	"version": "0.0.0",
+	"dependencies": {
+		"underscore": "1.x",
+		"connect": "1.x",
+		"socket.io": "0.8.x",
+		"browserify": "1.x",
+		"coffeepack": ""
+	}
+}
