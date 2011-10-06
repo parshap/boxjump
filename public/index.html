@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+	<head>
+		<style type="text/css">
+			#viewport {
+				position: absolute;
+				width: 1024px;
+				height: 640px;
+
+				left: 50%;
+				margin-left: -512px;
+
+				top: 50%;
+				margin-top: -320px;
+
+				border: 2px solid black;
+
+				-webkit-user-select: none;
+				-khtml-user-select: none;
+				-moz-user-select: none;
+				-o-user-select: none;
+				user-select: none;
+			}
+
+			#viewport:after {
+				content: "";
+				display: block;
+				position: absolute;
+				bottom: 250px;
+				width: 100%;
+				height: 2px;
+				background: red;
+			}
+
+			#viewport div {
+				border: 1px dotted black;
+				position: absolute;
+				cursor: pointer;
+				background: rgba(200, 200, 200, 0.1);
+			}
+
+			#viewport div:hover {
+				background: rgba(255, 255, 100, 0.2);
+			}
+
+			#viewport div.collided {
+				background: rgba(255, 40, 40, 0.5);
+			}
+
+			#viewport div.collided:hover {
+				background: rgba(255, 80, 40, 0.5);
+			}
+
+			#game #fps {
+
+		</style>
+	</head>
+
+	<body>
+		<div id="game">
+		</div>
+
+		<script type="text/javascript" src="//documentcloud.github.com/underscore/underscore-min.js"></script>
+		<script type="text/javascript" src="/socket.io/socket.io.js"></script>
+		<script type="text/javascript" src="browserify.js"></script>
+	</body>
+</html>
