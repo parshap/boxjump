@@ -2,14 +2,18 @@ msgpack = require "coffeepack"
 sio = require "socket.io"
 
 Event = require("../event").Event
-List = requjire("../list").List
-
+Model = require("../model").Model
+List = require("../list").List
 Message = require("./message").Message
 
 
-exports.Server = class Server extends util.Event
-	constructor: (server) ->
+exports.Server = class Server extends Event
+	constructor: ->
 		@clients = new ClientList()
+
+		super()
+
+	listen: (server) ->
 		@io = sio.listen server
 
 		@io.sockets.on "connection", (socket) =>
@@ -18,14 +22,12 @@ exports.Server = class Server extends util.Event
 
 			@onConnect client
 
-		super()
-
 	# Called when a new connection is initiated, passed the new Client
 	# object that was created for the new connection
-	onConnection: (client) ->
+	onConnect: (client) ->
 		# Listen and handle events from the client
-		client.on "disconnect", => @onDisconnect client
-		client.on "message", (message) => @onMessage client, message
+		client.bind "disconnect", => @onDisconnect client
+		client.bind "message", (message) => @onMessage client, message
 
 		# Add the client to our list of clients
 		@clients.add client
@@ -48,7 +50,11 @@ exports.Server = class Server extends util.Event
 
 	# Sends a message to all clients
 	send: (message) ->
-		@clients.send message
+		@clients.send arguments...
+
+	# Filter clients
+	filter: (filter) ->
+		@clients.filter arguments...
 
 
 class Client extends Model
@@ -64,6 +70,20 @@ class Client extends Model
 
 
 class ClientList extends List
+	filter: (filter) ->
+		if filter instanceof Client
+			return new @constructor [filter]
+
+		else if filter instanceof List
+			# @TODO: Should this be a part of List#filter?
+			return new @constructor filter.array
+
+		else if filter instanceof Array
+			return new @constructor filter
+
+		else
+			super arguments...
+
 	# Sends the message to all clients in the list
 	send: (message) ->
 		@forEach (client) ->

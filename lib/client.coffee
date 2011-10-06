@@ -1,4 +1,7 @@
+net = require "./net/client"
+game = require("./game")
 Event = require("./event").Event
+Message = require("./net/message").Message
 
 
 exports.Application = class Application
@@ -13,19 +16,23 @@ exports.Application = class Application
 		@_initializeGame()
 
 	_initializeGame: ->
-		@game = new Game()
+		# @game = new Game()
 
 	_initializeNet: ->
-		@net = new net.Client().connect()
+		@net = new net.Client()
+
+		@net.bind "connect", =>
+			@sender[0x01]()
 
 	_initializeReceiver: ->
 		@receiver = new MessageReceiver @
 
-		@net.bind "message", (messageid, args) =>
-			if messageid in @receiver
-				@receiver[messageid] args...
+		@net.bind "message", (message) =>
+			if @receiver[message.id]?
+				@receiver[message.id] message
 			else
 				# @TODO: Unknown messsage received
+				console.log "Unknown message", message
 
 	_initializeSender: ->
 		@sender = new MessageSender @
@@ -34,7 +41,7 @@ exports.Application = class Application
 
 		# @TODO: Should this setup be here? Where else will we send
 		# messages from?
-		(->
+		(=>
 			timeoutid = null
 
 			# Send the current input state to the server
@@ -56,6 +63,10 @@ exports.Application = class Application
 		@controller = new Controller()
 
 		# @TODO: Predict input state changes locally
+
+	# Connect to a server
+	connect: ->
+		@net.connect()
 
 	# -- Game loop
 
@@ -82,15 +93,23 @@ class MessageReceiver
 	constructor: (@app) ->
 
 	# Join Response
-	0x02: (playerid) ->
+	0x02: (message) ->
+		[playerid] = message.arguments
 		# @TODO: Do something with playerid
 
+	# Chat Message
+	0x0A: (message) ->
+		[playerid, text] = message.arguments
+		console.log "Message", playerid, text
+		# @TODO: Display message text
+
 	# Game State
-	0x10: (time, args...) ->
+	0x10: (message) ->
+		[time, args...] = message.arguments
 		states = []
+		pos = 0
 
 		# Iterate through given player arguments
-		pos = 0
 		while (args.length - pos) >= 5
 			# Deconstruct arguments into state object
 			state =
@@ -113,11 +132,16 @@ class MessageReceiver
 
 
 class MessageSender
-	construct: (@app) ->
+	constructor: (@app) ->
 
 	# Join Request
 	0x01: ->
-		@app.net.send 0x01
+		@app.net.send new Message 0x01
+
+	0x0A: (text) ->
+		# @TODO: Get real playerid
+		playerid = 0
+		@app.net.send new Message 0x0A, [playerid, text]
 
 	# Player Input
 	0x11: ({up, right, down, left}) ->
@@ -127,10 +151,10 @@ class MessageSender
 		state |= (1 << 1) if down
 		state |= (1 << 0) if elft
 
-		@app.net.send 0x11, state
+		@app.net.send new Message 0x11, [state]
 
 
-class Controller extends util.Event
+class Controller extends Event
 	KEYS:
 		87: "up" # w
 		65: "left" # a

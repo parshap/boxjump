@@ -1,4 +1,7 @@
+net = require "./net/server"
+game = require("./game")
 Event = require("./event").Event
+Message = require("./net/message").Message
 
 
 exports.Application = class Application
@@ -8,27 +11,27 @@ exports.Application = class Application
 	constructor: ->
 		@_initializeNet()
 		@_initializeReceiver()
-		@_initializeSender()
 		@_initializeGame()
 
 	_initializeGame: ->
-		@game = new Game()
+		# @game = new Game()
 
 	_initializeNet: ->
-		@net = new net.Client().connect()
+		@net = new net.Server()
 
 	_initializeReceiver: ->
 		@receiver = new MessageReceiver @
 
 		@net.bind "message", (client, message) =>
-			if message.id in @receiver
+			if @receiver[message.id]?
 				@receiver[message.id] client, message
 			else
 				# @TODO: Unknown messsage received
 				console.log "Unknown message", client, message
 
-	_initializeSender: ->
-		@sender = new MessageSender @
+	# Starts listening to a server
+	listen: (server) ->
+		@net.listen server
 
 	# -- Game loop
 
@@ -44,7 +47,7 @@ exports.Application = class Application
 
 
 class MessageReceiver
-	construct: (@app) ->
+	constructor: (@app) ->
 
 	# Join Request
 	0x01: (client, message) ->
@@ -53,8 +56,14 @@ class MessageReceiver
 
 		# Send a Join Response to the requesting client
 		@app.net
-			.filter client
-			.send 0x02, playerid
+			.filter(client)
+			.send new Message 0x02, [playerid]
+
+	# Chat Message
+	0x0A: (client, message) ->
+		# @TODO: Validate the message's playerid
+		# @TODO: rate limit?
+		@app.net.send message
 
 	# Player Input
 	0x11: (client, message) ->
