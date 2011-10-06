@@ -1,5 +1,4 @@
 Event = require("./event").Event
-_ = require "underscore"
 
 exports.List = class List extends Event
 	constructor: (@array = []) ->
