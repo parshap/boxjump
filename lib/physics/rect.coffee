@@ -2,7 +2,7 @@ Vector = require("./vector").Vector
 Body = require("./body").Body
 
 exports.Rect = class Rect extends Body
-	constructor: (x, y, @h = 0, @w = 0) ->
+	constructor: (x, y, @w = 0, @h = 0) ->
 		super x, y
 
 	sides: ->
@@ -50,7 +50,7 @@ _sides = (x, y, hw, hh) ->
 
 # Returns whether or not the given rects are overlapping. The rects are
 # an object that define the four sides of the rect.
-_overlaps = (rect1, rect2) ->
+_colliding = (rect1, rect2) ->
 	return ! (
 		rect1.left >= rect2.right or
 		rect1.top >= rect2.bottom or

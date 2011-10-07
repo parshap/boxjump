@@ -29,6 +29,8 @@ exports.Body = class Body
 
 		moveV.add tForceV.mul(dt)
 
+		moveV.add tImpulseV.mul(dt)
+
 		oldPosition = new Vector { @x, @y }
 		collisions = []
 		moved = false
@@ -45,11 +47,15 @@ exports.Body = class Body
 			# @TODO: Make sure we're not moving to a previous contact constraint
 
 			# check for collisions at new position (and fire collision:before?)
-			for body in @world.bodies
+			for body in @world.bodies.array
+				# @TODO: Should these bodies collide?
+				if body is @
+					continue
+
 				if @colliding body
 					collisions.push body
 
-					if isContactConstraint
+					if true # @TODO isContactConstraint
 						moved = false
 						moveV = @resolve body, oldPosition
 						break
@@ -71,7 +77,7 @@ exports.Body = class Body
 
 	impulse: (impulseV) ->
 		effect = new Effect impulseV
-		@forces.push effect
+		@impulses.push effect
 		return effect
 
 	force: (forceV) ->

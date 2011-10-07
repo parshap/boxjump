@@ -16,13 +16,13 @@ exports.Vector = class Vector
 		return this
 
 	mul: (k) ->
-		x *= k
-		y *= k
+		@x *= k
+		@y *= k
 		return this
 
 	div: (k) ->
-		x /= k
-		y /= k
+		@x /= k
+		@y /= k
 
 	negate: -> return @mul -1
 
