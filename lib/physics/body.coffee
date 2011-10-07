@@ -60,6 +60,13 @@ exports.Body = class Body
 						moveV = @resolve body, oldPosition
 						break
 
+		movedV = new Vector({ @x, @y }).sub oldPosition
+
+		@airborne = movedV.y != 0
+
+		@velocity.x = 0 if movedV.x == 0
+		@velocity.y = 0 if movedV.y == 0
+
 		#if not sensor
 		# resolve any broken contact constraints
 		# fire any touch/notouch events (for changes)
