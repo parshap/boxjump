@@ -1,5 +1,5 @@
 net = require "./net/client"
-game = require("./game")
+Game = require("./game/game").Game
 Event = require("./event").Event
 Message = require("./net/message").Message
 GameView = require("./view/game").GameView
@@ -18,7 +18,7 @@ exports.Application = class Application
 		@_initializeView()
 
 	_initializeGame: ->
-		@game = new game.Game()
+		@game = new Game()
 
 	_initializeNet: ->
 		@net = new net.Client()
