@@ -6,6 +6,7 @@ GameView = require("./view/game").GameView
 
 
 exports.Application = class Application
+	_lastTick: null
 
 	# -- Initialization
 
@@ -24,12 +25,14 @@ exports.Application = class Application
 		@net = new net.Client()
 
 		@net.bind "connect", =>
+			@_sync()
 			@sender[0x01]()
 
 	_initializeReceiver: ->
 		@receiver = new MessageReceiver @
 
 		@net.bind "message", (message) =>
+			console.log "Message from server", message.id, message.arguments
 			if @receiver[message.id]?
 				@receiver[message.id] message
 			else
@@ -91,10 +94,20 @@ exports.Application = class Application
 
 		return this
 
+	_sync: ->
+		@sender[0x00]()
+
+		setTimeout (=>
+			@_sync()
+		), 5000
+
 	# -- Game logic
 
 	createPlayer: (playerid) ->
-		@player = @game.createPlayer playerid
+		player = @game.createPlayer playerid
+
+	setPlayer: (player) ->
+		@player = player
 
 	tick: (dt) ->
 		# These tasks are handled within event callbacks on async io
@@ -104,7 +117,7 @@ exports.Application = class Application
 		# * Send any output to the server
 
 		# Interpolate/extrapolate any game state from server updates
-		@_interpolate()
+		@_interpolate dt
 
 		# Update the game state
 		@game.tick dt
@@ -112,18 +125,64 @@ exports.Application = class Application
 		# Render the current game state
 		@view.tick dt
 
-	_interpolate: ->
-		# @TODO
+		@_lastTick = new Date().getTime()
+
+	_lastState: {}
+	_curState: {}
+
+	_interpolate: (dt) ->
+		time = @game.time + dt
+
+		for playerid, state of @_lastState
+			if state.time > time
+				console.log "Warning: last known state ahead of simulation time"
+				continue
+
+			player = @game.getPlayer state.playerid
+
+			pastState = state if state.time < time
+
+			if curState = @_curState[playerid]
+				if curState.time <= time
+					console.log "new state too old"
+					pastState = curState
+					curState = null
+
+			if pastState and curState
+				console.log "Interpolate", pastState, curState, time
+
+			# player.interpolate pastState, curState, time
 
 
 class MessageReceiver
 	constructor: (@app) ->
 
+	# Time Sync
+	0x00: (message) ->
+		if message.arguments.length == 2
+			[sent, received] = message.arguments
+			now = new Date().getTime()
+
+			# Discard if RTT > 200ms
+			rtt = now - sent
+			if rtt > 200
+				console.log "Discarding time sync with rtt", rtt
+				return
+
+			elapsed = (now - @app._lastTick) / 1000
+			oldTime = @app.game.time
+			newTime = (received - elapsed) - 0.1
+			diff = newTime - @app.game.time
+
+			if diff > 0.5
+				@app.game.time = newTime
+				console.log "Synchronized time", oldTime, newTime, diff
+
 	# Join Response
 	0x02: (message) ->
 		[playerid] = message.arguments
 
-		@app.createPlayer playerid
+		@app.setPlayer @app.createPlayer playerid
 
 	# Chat Message
 	0x0A: (message) ->
@@ -133,34 +192,47 @@ class MessageReceiver
 
 	# Game State
 	0x10: (message) ->
+		# We got a game state update
+
+		# Move the previous ones ...
+		for playerid, state of @app._curState
+			@app._lastState[playerid] = state
+
+		# Add the new ones
+		@app._curState = {}
+
 		[time, args...] = message.arguments
-		states = []
 		pos = 0
+
+		console.log "Got state", time, @app.game.time
 
 		# Iterate through given player arguments
 		while (args.length - pos) >= 5
 			# Deconstruct arguments into state object
 			state =
 				time: time
-				playerid: args[pos]
+				playerid: args[pos++]
 				position:
-					x: args[pos + 1]
-					y: args[pos + 2]
+					x: args[pos++]
+					y: args[pos++]
 				velocity:
-					x: args[pos + 3]
-					y: args[pos + 4]
+					x: args[pos++]
+					y: args[pos++]
 
-			# Add this player state to list of states
-			states.push state
-
-			# Advance to the next player parameters
-			pos += 5
+			# Add this player state
+			@app._curState[state.playerid] = state
 
 		# @TODO: Do something with states
 
 
 class MessageSender
 	constructor: (@app) ->
+
+	# Time Sync
+	0x00: ->
+		now = new Date().getTime()
+		@app.net.send new Message 0x00, [now]
+		console.log "Sending sync", now
 
 	# Join Request
 	0x01: ->

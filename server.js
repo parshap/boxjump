@@ -8,7 +8,7 @@ var connect = require("connect"),
 
 // Set up the game server
 ;(function() {
-	gameServer.listen(httpServer)
+	gameServer.listen(httpServer).start()
 }())
 
 

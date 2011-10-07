@@ -6,6 +6,8 @@ map = require("./map")
 
 
 exports.Game = class Game extends Model
+	time: 0
+
 	initialize: ->
 		@players = new player.PlayerList
 		@walls = new wall.WallList
@@ -22,15 +24,23 @@ exports.Game = class Game extends Model
 			@world.add wall.body
 
 	createPlayer: (playerid) ->
-		player = new player.Player
+		p = new player.Player
 			id: playerid
 
-		@players.add player
-		@world.add player.body
+		@players.add p
+		@world.add p.body
 
-		return player
+		return p
+
+	getPlayer: (playerid) ->
+		for player in @players.array
+			return player if player.id == playerid
+
+		return null
 
 	tick: (dt) ->
+		@time += dt
+
 		# Advance each player
 		@players.forEach (player) ->
 			player.tick dt
