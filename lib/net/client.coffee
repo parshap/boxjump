@@ -5,6 +5,8 @@ Message = require("./message").Message
 
 
 exports.Client = class Client extends Event
+	playerid: null
+
 	constructor: ->
 		@socket = null
 
