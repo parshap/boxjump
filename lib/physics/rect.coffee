@@ -75,9 +75,9 @@ _resolve = (rect1, rect2, v) ->
 
 	if v.y == 0
 		return if v.x > 0
-			x: rect2.left - rect1.right, y: 0
+			new Vector x: rect2.left - rect1.right, y: 0
 		else
-			x: rect2.right - rect1.left, y: 0
+			new Vector x: rect2.right - rect1.left, y: 0
 
 	p1 = new Vector
 		x: if v.x > 0 then rect1.right else rect1.left
