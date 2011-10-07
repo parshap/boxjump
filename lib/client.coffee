@@ -2,6 +2,7 @@ net = require "./net/client"
 game = require("./game")
 Event = require("./event").Event
 Message = require("./net/message").Message
+GameView = require("./view/game").GameView
 
 
 exports.Application = class Application
@@ -14,9 +15,10 @@ exports.Application = class Application
 		@_initializeReceiver()
 		@_initializeSender()
 		@_initializeGame()
+		@_initializeView()
 
 	_initializeGame: ->
-		# @game = new Game()
+		@game = new game.Game()
 
 	_initializeNet: ->
 		@net = new net.Client()
@@ -46,12 +48,13 @@ exports.Application = class Application
 
 			# Send the current input state to the server
 			send = =>
-				@sender[0x11](@controller.state)
+				@sender[0x11] @controller.state
+				@player.predictInput @controller.state
 				timeoutid = null
 
-			# "Buffer" other state changes for 4ms and then send
-			change = ->
-				setTimeout send, 4 if not timeoutid
+			# "Buffer" other state changes and send periodically
+			change = =>
+				timeoutid = setTimeout send, 10 if not timeoutid
 
 			@controller.bind "up", change
 			@controller.bind "right", change
@@ -64,11 +67,34 @@ exports.Application = class Application
 
 		# @TODO: Predict input state changes locally
 
+	_initializeView: ->
+		@view = new GameView
+			game: @game
+		document.getElementById("game").appendChild @view.el
+
 	# Connect to a server
 	connect: ->
 		@net.connect()
 
-	# -- Game loop
+		return this
+
+	# Start the game loop
+	start: ->
+		lastTick = new Date().getTime()
+
+		setInterval (=>
+			now = new Date().getTime()
+			dt = (now - lastTick) / 1000
+			@tick dt
+			lastTick = now
+		), 1000/60
+
+		return this
+
+	# -- Game logic
+
+	createPlayer: (playerid) ->
+		@player = @game.createPlayer playerid
 
 	tick: (dt) ->
 		# These tasks are handled within event callbacks on async io
@@ -84,6 +110,7 @@ exports.Application = class Application
 		@game.tick dt
 
 		# Render the current game state
+		@view.tick dt
 
 	_interpolate: ->
 		# @TODO
@@ -95,7 +122,8 @@ class MessageReceiver
 	# Join Response
 	0x02: (message) ->
 		[playerid] = message.arguments
-		# @TODO: Do something with playerid
+
+		@app.createPlayer playerid
 
 	# Chat Message
 	0x0A: (message) ->
@@ -149,7 +177,7 @@ class MessageSender
 		state |= (1 << 3) if up
 		state |= (1 << 2) if right
 		state |= (1 << 1) if down
-		state |= (1 << 0) if elft
+		state |= (1 << 0) if left
 
 		@app.net.send new Message 0x11, [state]
 
