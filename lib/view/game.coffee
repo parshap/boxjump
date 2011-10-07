@@ -1,5 +1,6 @@
 View = require("./view").View
 PlayerView = require("./player").PlayerView
+WallView = require("./wall").WallView
 
 
 exports.GameView = class GameView extends View
@@ -11,6 +12,11 @@ exports.GameView = class GameView extends View
 
 		@game.players.bind "add", (player) =>
 			@addedPlayers.push player
+
+		# Create walls
+		@game.walls.forEach (wall) =>
+			view = new WallView wall: wall
+			@el.appendChild view.el
 
 	addPlayer: (player) ->
 		view = new PlayerView player: player

@@ -23,9 +23,6 @@ exports.Player = class Player extends Model
 
 		# @TODO: The body probably needs a back reference to this player
 
-		# Add the body to the physics world
-		@game.world.add @body
-
 		# Create an impulse effect that will be used for movement
 		@moveI = @body.impulse x: 0, y: 0
 
@@ -47,4 +44,3 @@ exports.Player = class Player extends Model
 
 
 exports.PlayerList = class PlayerList extends List
-	model: Player
