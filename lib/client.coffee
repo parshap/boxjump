@@ -6,7 +6,10 @@ GameView = require("./view/game").GameView
 
 
 exports.Application = class Application
-	_lastTick: null
+
+	epoch: null
+
+	_tickTime: null
 
 	# -- Initialization
 
@@ -83,13 +86,15 @@ exports.Application = class Application
 
 	# Start the game loop
 	start: ->
-		lastTick = new Date().getTime()
+		# @TODO: tickTime can be local
+		@_tickTime = new Date().getTime()
 
 		setInterval (=>
 			now = new Date().getTime()
-			dt = (now - lastTick) / 1000
-			@tick dt
-			lastTick = now
+			dt = (now - @_tickTime) / 1000
+			@_tickTime = now
+			gameTime = @_gameTime @_tickTime
+			@tick gameTime, dt
 		), 1000/60
 
 		return this
@@ -101,57 +106,28 @@ exports.Application = class Application
 			@_sync()
 		), 5000
 
-	# -- Game logic
+	# Returns the game time at the given tick time (defaults to now)
+	_gameTime: (now = null) ->
+		now or= new Date().getTime()
+		return now - @epoch
 
-	createPlayer: (playerid) ->
-		player = @game.createPlayer playerid
+	# -- Game logic
 
 	setPlayer: (player) ->
 		@player = player
 
-	tick: (dt) ->
+	tick: (time, dt) ->
 		# These tasks are handled within event callbacks on async io
 		# components (such as net or a controller)
 		# * Process any input from the server
 		# * Process any input from input devices
 		# * Send any output to the server
 
-		# Interpolate/extrapolate any game state from server updates
-		@_interpolate dt
-
 		# Update the game state
-		@game.tick dt
+		@game.tick time, dt
 
 		# Render the current game state
-		@view.tick dt
-
-		@_lastTick = new Date().getTime()
-
-	_lastState: {}
-	_curState: {}
-
-	_interpolate: (dt) ->
-		time = @game.time + dt
-
-		for playerid, state of @_lastState
-			if state.time > time
-				console.log "Warning: last known state ahead of simulation time"
-				continue
-
-			player = @game.getPlayer state.playerid
-
-			pastState = state if state.time < time
-
-			if curState = @_curState[playerid]
-				if curState.time <= time
-					console.log "new state too old"
-					pastState = curState
-					curState = null
-
-			if pastState and curState
-				console.log "Interpolate", pastState, curState, time
-
-			# player.interpolate pastState, curState, time
+		@view.tick time, dt
 
 
 class MessageReceiver
@@ -164,25 +140,19 @@ class MessageReceiver
 			now = new Date().getTime()
 
 			# Discard if RTT > 200ms
-			rtt = now - sent
-			if rtt > 200
-				console.log "Discarding time sync with rtt", rtt
+			if (rtt = now - sent) > 200
+				console.log "Warning: Discarding time sync with rtt", rtt
 				return
 
-			elapsed = (now - @app._lastTick) / 1000
-			oldTime = @app.game.time
-			newTime = (received - elapsed) - 0.1
-			diff = newTime - @app.game.time
-
-			if diff > 0.5
-				@app.game.time = newTime
-				console.log "Synchronized time", oldTime, newTime, diff
+			if (diff = Math.abs(@app._gameTime(now) - received)) > 50
+				console.log "Warning: Latency changed - synchronizing time", diff
+				@app.epoch -= received - now
 
 	# Join Response
 	0x02: (message) ->
 		[playerid] = message.arguments
 
-		@app.setPlayer @app.createPlayer playerid
+		@app.setPlayer @app.game.createPlayer playerid
 
 	# Chat Message
 	0x0A: (message) ->
@@ -192,26 +162,18 @@ class MessageReceiver
 
 	# Game State
 	0x10: (message) ->
-		# We got a game state update
-
-		# Move the previous ones ...
-		for playerid, state of @app._curState
-			@app._lastState[playerid] = state
-
-		# Add the new ones
-		@app._curState = {}
-
 		[time, args...] = message.arguments
 		pos = 0
 
-		console.log "Got state", time, @app.game.time
+		console.log "Got state", time, @app._gameTime()
 
 		# Iterate through given player arguments
 		while (args.length - pos) >= 5
+			playerid = args[pos++]
+
 			# Deconstruct arguments into state object
 			state =
 				time: time
-				playerid: args[pos++]
 				position:
 					x: args[pos++]
 					y: args[pos++]
@@ -219,10 +181,11 @@ class MessageReceiver
 					x: args[pos++]
 					y: args[pos++]
 
-			# Add this player state
-			@app._curState[state.playerid] = state
+			# Get the player or create one
+			player = @app.game.getPlayer(playerid) or
+				@app.game.createPlayer(playerid)
 
-		# @TODO: Do something with states
+			player.body.states.push state
 
 
 class MessageSender

@@ -12,5 +12,5 @@ exports.PlayerView = class PlayerView extends View
 		@el.style.width = @SCALE * @player.get("width") + "px"
 		@el.style.height = @SCALE * @player.get("height") + "px"
 
-	tick: (dt) ->
+	tick: (time, dt) ->
 		@update()

@@ -23,7 +23,7 @@ exports.GameView = class GameView extends View
 		@playerViews[player.id] = view
 		@el.appendChild view.el
 
-	tick: (dt) ->
+	tick: (time, dt) ->
 		# Add any new players
 		@addedPlayers.forEach (player) =>
 			@addPlayer player
@@ -32,4 +32,4 @@ exports.GameView = class GameView extends View
 		@addedPlayers.length = 0
 
 		for playerid, playerView of @playerViews
-			playerView.tick dt
+			playerView.tick time, dt

@@ -39,8 +39,8 @@ exports.Player = class Player extends Model
 		# @TODO
 		@input state
 
-	tick: (dt) ->
-		@body.tick dt
+	tick: (time, dt) ->
+		@body.tick time, dt
 
 
 exports.PlayerList = class PlayerList extends List

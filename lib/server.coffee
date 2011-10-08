@@ -6,7 +6,8 @@ Message = require("./net/message").Message
 
 
 exports.Application = class Application
-	_lastTick: null
+
+	epoch: null
 
 	# -- Initialization
 
@@ -42,16 +43,26 @@ exports.Application = class Application
 
 	# Start the game loop
 	start: ->
-		lastTick = new Date().getTime()
+		# Start the game time at 0
+		tickTime = new Date().getTime()
+		@epoch = tickTime
 
 		setInterval (=>
 			now = new Date().getTime()
-			dt = (now - lastTick) / 1000
-			@tick dt
-			lastTick = now
+			dt = (now - tickTime) / 1000
+			tickTime = now
+			gameTime = @_gameTime tickTime
+
+			console.log "Game time", gameTime, "at", tickTime
+			@tick gameTime, dt
 		), 1000/120
 
 		return this
+
+	# Returns the game time at the given tick time (defaults to now)
+	_gameTime: (now = null) ->
+		now or= new Date().getTime()
+		return now - @epoch
 
 	# -- Game logic
 
@@ -61,28 +72,26 @@ exports.Application = class Application
 
 		return player
 
-	tick: (dt) ->
+	tick: (time, dt) ->
 		# Process input from clients
 		# This is done as the input is received by the MessageReceiver
 
 		# Update the game state
-		@game.tick dt
+		@game.tick time, dt
 
-		@_sendState() if @_shouldSendState()
+		@_sendState time
 		# Send any output to clients
 		# @TODO
 
-		@_lastTick = new Date().getTime()
-
-	_lastSentState: -1
+	_lastSentState: -Infinity
 	_lastState: {}
 
-	_shouldSendState: ->
-		return (@game.time - @_lastSentState) > 0.050
+	_sendState: (time) ->
+		# Send every 50ms
+		return if (time - @_lastSentState) < 0.050
 
-	_sendState: ->
 		state = @_getState() # Current state
-		message = new Message 0x10, [@game.time]
+		message = new Message 0x10, [time]
 
 		for playerid, pstate of state
 			# Compare the current state to the previous state and if they are
@@ -100,7 +109,7 @@ exports.Application = class Application
 		@net.send message if message.arguments.length > 1
 
 		@_lastState = state
-		@_lastSentState = @game.time
+		@_lastSentState = time
 
 	# Generate a full copy of the current state
 	_getState: ->
@@ -121,10 +130,7 @@ class MessageReceiver
 
 	# Time Sync
 	0x00: (client, message) ->
-		now = new Date().getTime()
-		elapsed = now - @app._lastTick
-		time = @app.game.time + (elapsed / 1000)
-		message.arguments.push time
+		message.arguments.push @app._gameTime()
 
 		@app.net
 			.filter(client)

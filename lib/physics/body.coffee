@@ -7,7 +7,7 @@ exports.Body = class Body
 		@impulses = []
 		@forces = []
 
-	tick: (dt) ->
+	tick: (time, dt) ->
 		# pos = pos + 0.5 * v * dt
 		# v = v + a * dt
 		# pos = pos + 0.5 * v * dt
