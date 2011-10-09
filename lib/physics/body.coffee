@@ -44,14 +44,33 @@ exports.Body = class Body
 	_interpolate: (time) ->
 		return false if not @states.length
 
-		state = @states[@states.length - 1]
+		# Get rid of any extra past states, we only need 1
+		while (@states.length > 1) and (@states[1].time <= time)
+			@states.shift()
 
-		@x = state.position.x
-		@y = state.position.y
-		@velocity.x = state.velocity.x
-		@velocity.y = state.velocity.y
+		if @states.length > 1
+			if @states[0].time <= time <= @states[1].time
+				# console.log "interpolating", time, @states
 
-		return true
+				# Interpolate !
+				elapsed = time - @states[0].time
+				k = elapsed / (@states[1].time - @states[0].time)
+
+				@x = @states[0].position.x * (1 - k)
+				@x += @states[1].position.x * k
+
+				@y = @states[0].position.y * (1 - k)
+				@y += @states[1].position.y * k
+
+				@velocity.x = @states[0].velocity.x * (1 - k)
+				@velocity.x += @states[1].velocity.x * k
+
+				@velocity.y = @states[0].velocity.y * (1 - k)
+				@velocity.y += @states[1].velocity.y * k
+
+				return true
+
+		return false
 
 	_move: (dt) ->
 		oldPosition = new Vector { @x, @y }
