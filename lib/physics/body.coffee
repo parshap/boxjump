@@ -12,6 +12,10 @@ exports.Body = class Body
 
 	velocity: null
 
+	_collidesCallbacks: []
+
+	_contactsCallbacks: []
+
 	constructor: (@x = 0, @y = 0) ->
 		@world = null # @TODO: Collision logic expects @world
 		@states = []
@@ -116,17 +120,41 @@ exports.Body = class Body
 
 			# check for collisions at new position (and fire collision:before?)
 			for body in @world.bodies.array
-				# @TODO: Should these bodies collide?
-				if body is @
-					continue
-
-				if @colliding body
+				if @_collides(body)and @colliding(body)
 					collisions.push body
 
-					if true # @TODO isContactConstraint
+					if @_contacts body
 						moved = false
 						moveV = @resolve body, oldPosition
 						break
+
+	# Returns whether or not this body *can* collide with the given body
+	_collides: (body) ->
+		# A body cannot collide with itself
+		return false if body is @
+
+		# Return true if any of the collides callbacks return true
+		for collides in @_collidesCallbacks
+			if collides.call(null, body)
+				return true
+
+		return false
+
+	# Returns whether or not there is a contact constraint between this body
+	# and the given body
+	_contacts: (body) ->
+		# Return true if any of the contacts callbacks return true
+		for contacts in @_contactsCallbacks
+			if contacts.call(null, body)
+				return true
+
+		return false
+
+	collides: (callback) ->
+		@_collidesCallbacks.push callback
+
+	contacts: (callback) ->
+		@_contactsCallbacks.push callback
 
 	# Returns whether or not this body is colliding with the given body
 	colliding: (body) ->
