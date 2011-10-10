@@ -1,4 +1,5 @@
 Vector = require("./vector").Vector
+Effect = require("./effect").Effect
 
 exports.Body = class Body
 	world: null
@@ -174,15 +175,3 @@ exports.Body = class Body
 		effect = new Effect forceV
 		@forces.push effect
 		return effect
-
-
-class Effect extends Vector
-	active: true
-
-	enable: ->
-		@active = true
-		return this
-
-	disable: ->
-		@active = false
-		return this
