@@ -21,6 +21,18 @@ exports.Player = class Player extends Model
 			@get("height")
 		)
 
+		# Give the body a back reference to this player
+		# @TODO: Is there a way to avoid this?
+		# @TODO: Circular references need to be manually cleaned up
+		@body.player = @
+
+		# Collide with everything (@TODO ?)
+		@body.collides -> true
+
+		# No contact constraint between players
+		@body.contacts (body) ->
+			return ! body.player
+
 		# @TODO: The body probably needs a back reference to this player
 
 		# Create an impulse effect that will be used for movement
