@@ -21,6 +21,8 @@ exports.List = class List extends Event
 	forEach: ->
 		@array.forEach(arguments...)
 
+		return this
+
 	# Proxy array "iteration methods"
 	[
 		"filter"
