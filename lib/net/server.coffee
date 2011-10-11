@@ -51,6 +51,11 @@ exports.Server = class Server extends Event
 	# Sends a message to all clients
 	send: (message) ->
 		@clients.send arguments...
+		return this
+
+	flush: ->
+		@clients.flush arguments...
+		return this
 
 	# Filter clients
 	filter: (filter) ->
@@ -58,7 +63,11 @@ exports.Server = class Server extends Event
 
 
 class Client extends Model
+	buffer: null
+
 	initialize: ->
+		@buffer = []
+
 		@socket.on "disconnect", =>
 			@trigger "disconnect"
 
@@ -66,7 +75,18 @@ class Client extends Model
 			@trigger "message", Message.unpack data
 
 	send: (message) ->
-		@socket.send message.pack()
+		@buffer.push message
+		console.log "sending", message.pack().length
+		return this
+
+	flush: ->
+		@socket.send @packBuffer() if @buffer.length
+		@buffer = []
+
+		return this
+
+	packBuffer: ->
+		msgpack.pack (message.raw() for message in @buffer)
 
 
 class ClientList extends List
@@ -88,3 +108,11 @@ class ClientList extends List
 	send: (message) ->
 		@forEach (client) ->
 			client.send message
+
+		return this
+
+	flush: ->
+		@forEach (client) ->
+			client.flush()
+
+		return this

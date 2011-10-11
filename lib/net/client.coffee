@@ -19,7 +19,8 @@ exports.Client = class Client extends Event
 		@socket.on "disconnect", => @trigger "disconnect"
 
 		@socket.on "message", (data) =>
-			@trigger "message", Message.unpack data
+			for raw in msgpack.unpack data
+				@trigger "message", Message.unraw raw
 
 		return this
 
