@@ -1,13 +1,14 @@
 _ = require "underscore"
 net = require "./net/server"
 Game = require("./game/game").Game
-Event = require("./event").Event
 Message = require("./net/message").Message
 
 
 exports.Application = class Application
 
 	epoch: null
+
+	updateInterval: 250
 
 	# -- Initialization
 
@@ -53,7 +54,6 @@ exports.Application = class Application
 			tickTime = now
 			gameTime = @_gameTime tickTime
 
-			console.log "Game time", gameTime, "at", tickTime
 			@tick gameTime, dt
 		), 1000/120
 
@@ -79,51 +79,77 @@ exports.Application = class Application
 		# Update the game state
 		@game.tick time, dt
 
-		@_sendState time
 		# Send any output to clients
-		# @TODO
+		@_sendStates time
+		@net.flush()
 
-	_lastSentState: -Infinity
-	_lastState: {}
+	# The last time updates were sent
+	_lastStatesSent: -Infinity
 
-	_sendState: (time) ->
-		# Send every 50ms
-		return if (time - @_lastSentState) < 0.050
+	# A snapshot of states at the last time updates were sent
+	_lastStates: {}
 
-		state = @_getState() # Current state
-		message = new Message 0x10, [time]
+	# Sends the current states
+	_sendStates: (time) ->
+		# Send only once every @updateInterval
+		return if (time - @_lastStatesSent) < @updateInterval
 
-		for playerid, pstate of state
-			# Compare the current state to the previous state and if they are
-			# different, add the player state to the message to send
-			if not _.isEqual pstate, @_lastState[playerid]
+		send = (time, states) =>
+			message = new Message 0x10, [time]
+
+			for state in states
+				state.sent = true
+
 				message.arguments.push(
-					pstate.id
-					pstate.x
-					pstate.y
-					pstate.vx
-					pstate.vy
+					state.id
+					state.position.x
+					state.position.y
 				)
 
-		# Send the message if there is any data
-		@net.send message if message.arguments.length > 1
+			@net.send message
 
-		@_lastState = state
-		@_lastSentState = time
+		# Current states
+		states = @_getStates()
+
+		# States to be sent
+		sendStates = []
+
+		# We only need to send a subset of the current states
+		for state in states
+			lastState = @_lastStates[state.id]
+
+			# If the position has changed, we need to send this state
+			if not  _.isEqual state.position, lastState?.position
+				# We will ensure the last state is known also
+				# @TODO: We should send the time right before the change
+				# occured.
+				if lastState and not lastState.sent
+					send @_lastStatesSent, [lastState]
+
+				sendStates.push state
+
+		# Send the states
+		send time, sendStates if sendStates.length
+
+		# Save the current states
+		@_lastStates = {}
+		@_lastStates[state.id] = state for state in states
+
+		# Save the time we sent an update
+		@_lastStatesSent = time
 
 	# Generate a full copy of the current state
-	_getState: ->
-		state = {}
+	_getStates: ->
+		states = []
 
-		for player in @game.players.array
-			state[player.id] =
+		@game.players.forEach (player) ->
+			states.push
 				id: player.id
-				x: player.body.x
-				y: player.body.y
-				vx: player.body.velocity.x
-				vy: player.body.velocity.y
+				position:
+					x: player.body.x
+					y: player.body.y
 
-		return state
+		return states
 
 class MessageReceiver
 	constructor: (@app) ->
@@ -134,7 +160,8 @@ class MessageReceiver
 
 		@app.net
 			.filter(client)
-			.send message
+			.send(message)
+			.flush()
 
 	# Join Request
 	0x01: (client, message) ->
@@ -145,7 +172,8 @@ class MessageReceiver
 		# Send a Join Response to the requesting client
 		@app.net
 			.filter(client)
-			.send new Message 0x02, [player.id]
+			.send(new Message 0x02, [player.id])
+			.flush()
 
 	# Chat Message
 	0x0A: (client, message) ->

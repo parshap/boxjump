@@ -9,6 +9,8 @@ exports.Application = class Application
 
 	epoch: null
 
+	lerp: 300
+
 	_tickTime: null
 
 	# -- Initialization
@@ -144,9 +146,9 @@ class MessageReceiver
 				console.log "Warning: Discarding time sync with rtt", rtt
 				return
 
-			if (diff = Math.abs(@app._gameTime(now) - received)) > 50
+			if (diff = Math.abs(@app._gameTime(now) - received)) - @app.lerp > 50
 				console.log "Warning: Latency changed - synchronizing time", diff
-				@app.epoch -= received - now
+				@app.epoch -= (received - @app.lerp) - now
 
 	# Join Response
 	0x02: (message) ->
@@ -165,27 +167,21 @@ class MessageReceiver
 		[time, args...] = message.arguments
 		pos = 0
 
-		console.log "Got state", time, @app._gameTime()
-
 		# Iterate through given player arguments
-		while (args.length - pos) >= 5
+		while (args.length - pos) >= 3
 			playerid = args[pos++]
 
 			# Deconstruct arguments into state object
 			state =
 				time: time
-				position:
-					x: args[pos++]
-					y: args[pos++]
-				velocity:
-					x: args[pos++]
-					y: args[pos++]
+				x: args[pos++]
+				y: args[pos++]
 
 			# Get the player or create one
 			player = @app.game.getPlayer(playerid) or
 				@app.game.createPlayer(playerid)
 
-			player.body.states.push state
+			player.body.states.push state if player != @app.player
 
 
 class MessageSender
