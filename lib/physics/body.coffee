@@ -25,26 +25,10 @@ exports.Body = class Body
 		@forces = []
 
 	tick: (time, dt) ->
-		interpolated = false
-		oldPosition = new Vector { @x, @y }
-
 		interpolated = @_interpolate time
 
 		if not interpolated
 			@_move dt
-
-		movedV = new Vector({ @x, @y }).sub oldPosition
-
-		@airborne = movedV.y != 0
-
-		@velocity.x = 0 if movedV.x == 0
-		@velocity.y = 0 if movedV.y == 0
-
-		#if not sensor
-		# resolve any broken contact constraints
-		# fire any touch/notouch events (for changes)
-		#if sensor
-		# fire any collision/nocollision events (for changes)
 
 	# Sets the current state of the body (position) by interpolating
 	# values at the given time from known states. Returns true if
@@ -100,29 +84,59 @@ exports.Body = class Body
 
 		moveV.mul dt
 
-		collisions = []
-		moved = false
-
-		while not moved
-
-			# Update position by move vector
-			@x += moveV.x
-			@y += moveV.y
+		# Attempts to move by the given move vector and returns the
+		# actual move vector
+		move = (moveV) =>
+			moveV = new Vector moveV
+			movedV = moveV.clone()
 
 			collisions = []
-			moved = true
+			moved = false
 
-			# @TODO: Make sure we're not moving to a previous contact constraint
+			while not moved
+				# Update position by move vector
+				@x += moveV.x
+				@y += moveV.y
 
-			# check for collisions at new position (and fire collision:before?)
-			for body in @world.bodies.array
-				if @_collides(body)and @colliding(body)
-					collisions.push body
+				collisions = []
+				moved = true
 
-					if @_contacts body
-						moved = false
-						moveV = @resolve body, oldPosition
-						break
+				# @TODO: Make sure we're not moving to a previous contact constraint
+
+				# check for collisions at new position (and fire collision:before?)
+				for body in @world.bodies.array
+					if @_collides(body)and @colliding(body)
+						collisions.push body
+
+						if @_contacts body
+							moved = false
+							moveV = @resolve body, oldPosition
+							movedV.add moveV
+							break
+
+				#if not sensor
+				# resolve any broken contact constraints
+				# fire any touch/notouch events (for changes)
+				#if sensor
+				# fire any collision/nocollision events (for changes)
+
+			return movedV
+
+		movedV = move moveV
+
+		# If we attempted to move down, but only went partially or 0 (hit ground)
+		if moveV.y > 0 and movedV.y < moveV.y
+			@airborne = false
+
+		# If we attempt to move down and went the full way
+		else if moveV.y > 0 and movedV.y == moveV.y
+			@airborne = true
+
+		# If we moved upwards at all
+		else if movedV.y < 0.000001
+			@airborne = true
+
+		@velocity.y = 0 if not @airborne
 
 	# Returns whether or not this body *can* collide with the given body
 	_collides: (body) ->
