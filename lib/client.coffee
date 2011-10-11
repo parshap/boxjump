@@ -96,6 +96,11 @@ exports.Application = class Application
 			dt = (now - @_tickTime) / 1000
 			@_tickTime = now
 			gameTime = @_gameTime @_tickTime
+
+			if dt > 0.1
+				dt = 0.1
+				console.log "Warning: Slow tick"
+
 			@tick gameTime, dt
 		), 1000/60
 
