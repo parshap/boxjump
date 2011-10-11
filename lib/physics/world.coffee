@@ -20,3 +20,11 @@ exports.World = class World
 		@bodies.add body
 
 		return this
+
+	remove: (body) ->
+		body.world = null
+		@bodies.remove body
+
+		# @TODO: Gravity?
+
+		return this

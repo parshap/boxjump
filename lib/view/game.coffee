@@ -8,10 +8,12 @@ exports.GameView = class GameView extends View
 
 	initialize: ->
 		@playerViews = {}
-		@addedPlayers = []
 
 		@game.players.bind "add", (player) =>
-			@addedPlayers.push player
+			@addPlayer player
+
+		@game.players.bind "remove", (player) =>
+			@removePlayer player
 
 		# Create walls
 		@game.walls.forEach (wall) =>
@@ -23,13 +25,10 @@ exports.GameView = class GameView extends View
 		@playerViews[player.id] = view
 		@el.appendChild view.el
 
+	removePlayer: (player) ->
+		if view = @playerViews[player.id]
+			@el.removeChild view.el
+
 	tick: (time, dt) ->
-		# Add any new players
-		@addedPlayers.forEach (player) =>
-			@addPlayer player
-
-		# Clear the new players array
-		@addedPlayers.length = 0
-
 		for playerid, playerView of @playerViews
 			playerView.tick time, dt

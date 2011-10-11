@@ -25,6 +25,14 @@ exports.Application = class Application
 	_initializeNet: ->
 		@net = new net.Server()
 
+		# When a client disconnects, remove them from the gamea nd send a
+		# PlayerLeave message
+		@net.bind "disconnect", (client) =>
+			if player = @game.getPlayer client.playerid
+				@game.removePlayer player
+
+				@net.send new Message 0x12, [player.id]
+
 	_initializeReceiver: ->
 		@receiver = new MessageReceiver @
 

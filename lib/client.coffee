@@ -183,6 +183,12 @@ class MessageReceiver
 
 			player.body.states.push state if player != @app.player
 
+	0x12: (message) ->
+		[playerid] = message.arguments
+
+		if player = @app.game.getPlayer playerid
+			@app.game.removePlayer player
+
 
 class MessageSender
 	constructor: (@app) ->

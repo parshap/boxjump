@@ -1,13 +1,14 @@
 Model = require("../model").Model
 physics = require("../physics")
-player = require("./player")
+Player = require("./player").Player
+PlayerList = require("./player").PlayerList
 wall = require("./wall")
 map = require("./map")
 
 
 exports.Game = class Game extends Model
 	initialize: ->
-		@players = new player.PlayerList
+		@players = new PlayerList
 		@walls = new wall.WallList
 
 		@_initializeWorld()
@@ -22,19 +23,23 @@ exports.Game = class Game extends Model
 			@world.add wall.body
 
 	createPlayer: (playerid) ->
-		p = new player.Player
+		player = new Player
 			id: playerid
 
-		@players.add p
-		@world.add p.body
+		@players.add player
+		@world.add player.body
 
-		return p
+		return player
 
 	getPlayer: (playerid) ->
 		for player in @players.array
 			return player if player.id == playerid
 
 		return null
+
+	removePlayer: (player) ->
+		@players.remove player
+		@world.remove player.body
 
 	tick: (time, dt) ->
 		# Advance each player
