@@ -76,7 +76,6 @@ class Client extends Model
 
 	send: (message) ->
 		@buffer.push message
-		console.log "sending", message.pack().length
 		return this
 
 	flush: ->
