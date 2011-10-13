@@ -15,10 +15,13 @@ exports.Player = class Player extends Model
 	jump: 14
 
 	defaults:
-		x: 10
-		y: 0
 		width: 1.5
 		height: 2
+
+		x: 10
+		y: 0
+
+		health: 100
 
 	initialize: ->
 		# Create a body for this player

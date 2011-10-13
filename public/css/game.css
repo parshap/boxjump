@@ -42,6 +42,38 @@
 	background: rgba(200, 200, 200, 0.1);
 }
 
+#viewport > .player > .health {
+	position: relative;
+	display: block;
+
+	left: 0;
+	top: -18px;
+
+	height: 10px;
+	width: 100%;
+
+	border: 1px solid black;
+	opacity: 0.75;
+	-webkit-appearance: none;
+}
+
+#viewport > .player > .health::-webkit-meter-bar {
+	background: rgba(0, 0, 0, 0.3);
+	padding: 1px;
+}
+
+#viewport > .player > .health::-webkit-meter-optimum-value {
+	background: green;
+}
+
+#viewport > .player > .health::-webkit-meter-suboptimum-value {
+	background: orange;
+}
+
+#viewport > .player > .health::-webkit-meter-even-less-good-value {
+	background: red;
+}
+
 /* Walls */
 #viewport > .wall {
 	background: rgb(120, 120, 120);
