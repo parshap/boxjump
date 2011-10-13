@@ -11,6 +11,10 @@ exports.Application = class Application
 
 	lerp: 300
 
+	rtt: 0
+
+	actions: null
+
 	_tickTime: null
 
 	# -- Initialization
@@ -22,6 +26,8 @@ exports.Application = class Application
 		@_initializeSender()
 		@_initializeGame()
 		@_initializeView()
+
+		@actions = []
 
 	_initializeGame: ->
 		@game = new Game()
@@ -47,33 +53,76 @@ exports.Application = class Application
 	_initializeSender: ->
 		@sender = new MessageSender @
 
-		# Send player input changes
-
-		# @TODO: Should this setup be here? Where else will we send
-		# messages from?
-		(=>
-			timeoutid = null
-
-			# Send the current input state to the server
-			send = =>
-				@sender[0x11] @controller.state
-				@player.predictInput @controller.state
-				timeoutid = null
-
-			# "Buffer" other state changes and send periodically
-			change = =>
-				timeoutid = setTimeout send, 10 if not timeoutid
-
-			@controller.bind "up", change
-			@controller.bind "right", change
-			@controller.bind "down", change
-			@controller.bind "left", change
-		)()
-
 	_initializeController: ->
 		@controller = new Controller()
 
-		# @TODO: Predict input state changes locally
+		# Actions
+		(=>
+			# Queue actions on input to occur on the next tick
+			queue = (actionid, args...) =>
+				@actions.push [ actionid, args ]
+
+			# Movement
+			# The player's current movement state is sent each time it
+			# changes (buffered by 10ms)
+			(=>
+				timeoutid = null
+				lastActionid = 0x00
+
+				getActionid = =>
+					if @controller.state.left and not @controller.state.right
+						return 0x01
+					if @controller.state.right and not @controller.state.left
+						return 0x02
+					return 0x00
+
+				# Queues the movement action if there was a change in movement
+				doAction = =>
+					actionid = getActionid()
+
+					queue actionid if actionid != lastActionid
+
+					lastActionid = actionid
+					timeoutid = null
+
+				# "Buffer" other state changes and send periodically
+				change = ->
+					timeoutid = setTimeout doAction, 10 if not timeoutid
+
+				@controller.bind "right", change
+				@controller.bind "left", change
+			)()
+
+			# Jump
+			(=>
+				jumpDelay = 250
+				lastJumpDown = null
+				jumpTimeout = null
+
+				jump = ->
+					# Determine the jump power
+					now = new Date().getTime()
+					elapsed = now - lastJumpDown
+					power = (jumpDelay - elapsed) / jumpDelay
+					power *= power
+					power = 1 - power
+					power = 0 if power < 0
+					power = 1 if power > 1
+
+					queue 0x03, power
+
+				@controller.bind "jump", (down) =>
+					if down and @player.predictCanPerform 0x03
+						lastJumpDown = new Date().getTime()
+						jumpTimeout = setTimeout jump, jumpDelay
+
+					if not down
+						if jumpTimeout
+							clearTimeout jumpTimeout
+							jumpTimeout = null
+							jump()
+			)()
+		)()
 
 	_initializeView: ->
 		@view = new GameView
@@ -118,6 +167,10 @@ exports.Application = class Application
 		now or= new Date().getTime()
 		return now - @epoch
 
+	_serverTime: (gameTime = null) ->
+		gameTime or= @_gameTime()
+		return gameTime + @lerp + @rtt
+
 	# -- Game logic
 
 	setPlayer: (player) ->
@@ -129,6 +182,22 @@ exports.Application = class Application
 		# * Process any input from the server
 		# * Process any input from input devices
 		# * Send any output to the server
+
+		# First a test occurs to see if the player can currently perform
+		# the action. If this test passes locally (client-side), then
+		# the client both sends a request to perform the action to the
+		# server and predicts the outcome of that action.
+		while @actions.length
+			[actionid, args] = @actions.pop()
+
+			# Predict if the player can perform this action
+			if @player.predictCanPerform actionid, args
+
+				# Request the server to perform this action
+				@sender[0x13] time, actionid, args
+
+				# Predict the result of performing this action
+				@player.predictPerform actionid, args
 
 		# Update the game state
 		@game.tick time, dt
@@ -143,17 +212,29 @@ class MessageReceiver
 	# Time Sync
 	0x00: (message) ->
 		if message.arguments.length == 2
+			# @TODO: Some statistical analysis
+			# http://codewhore.com/howto1.html
 			[sent, received] = message.arguments
 			now = new Date().getTime()
+			rtt = now - sent
+			diff = @app._gameTime(now) - (received - @app.lerp)
+
+			console.log "Sync RTT", rtt, "Sync Diff", diff
 
 			# Discard if RTT > 200ms
-			if (rtt = now - sent) > 200
+			if rtt > 200
 				console.log "Warning: Discarding time sync with rtt", rtt
 				return
 
-			if (diff = Math.abs(@app._gameTime(now) - received)) - @app.lerp > 50
+			if Math.abs(diff) > 100
 				console.log "Warning: Latency changed - synchronizing time", diff
-				@app.epoch -= (received - @app.lerp) - now
+				@app.epoch -= (received - @app.lerp) - @app._gameTime(now)
+				@app.rtt = rtt
+
+				# @TODO: Resync the player when changing epoch
+
+				# Tell the server about changes
+				@app.sender[0x02]()
 
 	# Join Response
 	0x02: (message) ->
@@ -208,6 +289,11 @@ class MessageSender
 	0x01: ->
 		@app.net.send new Message 0x01
 
+	# Client Info
+	0x02: ->
+		@app.net.send new Message 0x02, [@app.lerp, @app.rtt]
+
+	# Chat Message
 	0x0A: (text) ->
 		# @TODO: Get real playerid
 		playerid = 0
@@ -222,6 +308,10 @@ class MessageSender
 		state |= (1 << 0) if left
 
 		@app.net.send new Message 0x11, [state]
+
+	# Action Request
+	0x13: (time, actionid, args=[]) ->
+		@app.net.send new Message 0x13, [time, actionid, args...]
 
 
 class Controller extends Event
