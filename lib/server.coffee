@@ -8,12 +8,15 @@ exports.Application = class Application
 
 	epoch: null
 
+	actions: null
+
 	updateInterval: 250
 
 	# -- Initialization
 
 	constructor: ->
 		@_playerCount = 0
+		@actions = []
 
 		@_initializeNet()
 		@_initializeReceiver()
@@ -28,7 +31,7 @@ exports.Application = class Application
 		# When a client disconnects, remove them from the gamea nd send a
 		# PlayerLeave message
 		@net.bind "disconnect", (client) =>
-			if player = @game.getPlayer client.playerid
+			if player = @game.getPlayer client.get("playerid")
 				@game.removePlayer player
 
 				@net.send new Message 0x12, [player.id]
@@ -83,6 +86,23 @@ exports.Application = class Application
 	tick: (time, dt) ->
 		# Process input from clients
 		# This is done as the input is received by the MessageReceiver
+
+
+		# Sort queued actions by time (ascending)
+		@actions.sort (a, b) -> a.time - b.time
+
+		while @actions.length and @actions[0].time <= time
+			action = @actions.shift()
+			delay = time - action.time - action.lerp - action.rtt
+
+			console.log "Action delay", delay
+
+			if Math.abs(delay) > 200
+				console.log "Warning: Dropping action #{action.actionid} late", delay
+				continue
+
+			if player = @game.getPlayer action.playerid
+				player.perform action.actionid, action.time, delay, action.args
 
 		# Update the game state
 		@game.tick time, dt
@@ -175,13 +195,19 @@ class MessageReceiver
 	0x01: (client, message) ->
 		# Create a player for the client
 		player = @app.createPlayer()
-		client.playerid = player.id
+		client.set playerid: player.id
 
 		# Send a Join Response to the requesting client
 		@app.net
 			.filter(client)
 			.send(new Message 0x02, [player.id])
 			.flush()
+
+	# Client Info
+	0x02: (client, message) ->
+		[lerp, rtt] = message.arguments
+
+		client.set { lerp, rtt }
 
 	# Chat Message
 	0x0A: (client, message) ->
@@ -191,7 +217,7 @@ class MessageReceiver
 
 	# Player Input
 	0x11: (client, message) ->
-		if player = @app.game.getPlayer client.playerid
+		if player = @app.game.getPlayer client.get("playerid")
 			[state] = message.arguments
 
 			up = !! (state & (1 << 3))
@@ -200,3 +226,16 @@ class MessageReceiver
 			left = !! (state & (1 << 0))
 
 			player.input { up, right, down, left }
+
+	# Action Request
+	0x13: (client, message) ->
+		if player = @app.game.getPlayer client.get("playerid")
+			[time, actionid, args...] = message.arguments
+
+			@app.actions.push
+				playerid: client.get("playerid")
+				actionid: actionid
+				time: time
+				args: args
+				lerp: client.get("lerp")
+				rtt: client.get("rtt")
