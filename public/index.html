@@ -1,52 +1,7 @@
 <!doctype html>
 <html>
 	<head>
-		<style type="text/css">
-			#viewport {
-				position: absolute;
-				overflow: hidden;
-
-				width: 1024px;
-				height: 640px;
-
-				left: 50%;
-				margin-left: -512px;
-
-				top: 50%;
-				margin-top: -320px;
-
-				border: 2px solid black;
-
-				-webkit-user-select: none;
-				-khtml-user-select: none;
-				-moz-user-select: none;
-				-o-user-select: none;
-				user-select: none;
-			}
-
-			#viewport:after {
-				content: "";
-				display: block;
-				position: absolute;
-				bottom: 250px;
-				width: 100%;
-				height: 2px;
-				background: red;
-			}
-
-			#viewport > * {
-				position: absolute;
-			}
-
-			#viewport .player {
-				border: 1px dotted black;
-				background: rgba(200, 200, 200, 0.1);
-			}
-
-			#viewport .wall {
-				background: rgb(120, 120, 120);
-			}
-		</style>
+		<link rel="stylesheet" href="css/game.css" />
 	</head>
 
 	<body>
