@@ -16,7 +16,7 @@ exports.View = class View extends Event
 		for attr, val of options
 			@[attr] = val
 
-		@el or= document.createElement "div"
+		@el or= document.createElement @tagName
 
 		@el.id = @id if @id
 		@el.className = @className if @className
