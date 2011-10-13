@@ -93,7 +93,7 @@ _resolve = (rect1, rect2, v) ->
 		if v.y > 0
 			new Vector x: v.x, y: rect2.top - rect1.bottom
 		else
-			new Vector x: v.x, y: rect2.bottom - sides1.top
+			new Vector x: v.x, y: rect2.bottom - rect1.top
 	else # Collision on x axis
 		if v.x > 0
 			new Vector x: rect2.left - rect1.right, y: v.y
