@@ -142,7 +142,11 @@ exports.Body = class Body
 		else if movedV.y < 0.000001
 			@airborne = true
 
+		# Reset vertical velocity if we've landed
 		@velocity.y = 0 if not @airborne
+
+		# Or hit a ceiling
+		@velocity.y = 0 if moveV.y < 0 and movedV.y > moveV.y
 
 	# Returns whether or not this body *can* collide with the given body
 	_collides: (body) ->
