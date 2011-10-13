@@ -13,6 +13,8 @@ exports.Body = class Body
 
 	velocity: null
 
+	fallAffinity: 1.0
+
 	_collidesCallbacks: []
 
 	_contactsCallbacks: []
@@ -83,6 +85,10 @@ exports.Body = class Body
 		moveV.add impulse for impulse in @impulses when impulse.active
 
 		moveV.mul dt
+
+		# Multiply movement by fallAffinity if we're falling
+		# @TODO: Are we always falling if we're moving downward?
+		moveV.y *= @fallAffinity if moveV.y > 0
 
 		# Attempts to move by the given move vector and returns the
 		# actual move vector
