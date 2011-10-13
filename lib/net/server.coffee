@@ -63,7 +63,14 @@ exports.Server = class Server extends Event
 
 
 class Client extends Model
+	defaults:
+		playerid: null
+		lerp: 0
+		rtt: 0
+
 	buffer: null
+
+	socket: null
 
 	initialize: ->
 		@buffer = []
