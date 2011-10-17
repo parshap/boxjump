@@ -130,6 +130,7 @@ exports.Application = class Application
 
 				@controller.bind "jump", (down) =>
 					if down and @player.predictCanPerform 0x03
+						@player.trigger "pre-action:#{0x03}"
 						setTimeout jump, JUMP_DELAY if not jumping
 			)()
 		)()

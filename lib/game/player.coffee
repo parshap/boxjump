@@ -202,6 +202,8 @@ exports.Player = class Player extends Model
 	perform: (action, time, delay, args=[]) ->
 		@actions[action].perform.call @, time, delay, args...
 
+		@trigger "action:#{action}"
+
 	predictCanPerform: (action, args=[]) ->
 		(@actions[action].predictCan || @actions[action].can).call @, args...
 
@@ -210,6 +212,8 @@ exports.Player = class Player extends Model
 			@actions[action].predictPerform.call @, args...
 		else
 			@actions[action].perform.call @, 0, 0, args...
+
+		@trigger "action:#{action}"
 
 	tick: (time, dt) ->
 		@trigger "tick", time, dt
