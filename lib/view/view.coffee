@@ -39,6 +39,6 @@ exports.View = class View extends Event
 		classes = @getClasses()
 
 		if (index = classes.indexOf value) > -1
-			classes.splice classes.indexOf(value), 1
+			classes.splice index, 1
 
 		@el.className = classes.join(" ")
