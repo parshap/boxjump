@@ -32,7 +32,7 @@ exports.Player = class Player extends Model
 			@get("height")
 		)
 
-		@body.fallAffinity = 1.5
+		@body.fallAffinity = 2
 
 		# Give the body a back reference to this player
 		# @TODO: Is there a way to avoid this?
@@ -51,6 +51,9 @@ exports.Player = class Player extends Model
 		# Create an impulse effect that will be used for movement
 		@moveI = @body.impulse x: 0, y: 0
 
+		# Create an impulse effect that will be used for charging
+		@chargeI = @body.impulse(x: 0, y: 0).disable()
+
 		@_initializeTicks()
 
 	_initializeTicks: ->
@@ -59,6 +62,25 @@ exports.Player = class Player extends Model
 			@_callbacks["tick.next"] = []
 
 			callback.apply(null, arguments) for callback in callbacks
+
+		@_tickCallbacks = []
+
+		@bind "tick", (time, dt) =>
+			tickCallbacks = @_tickCallbacks
+			@_tickCallbacks = []
+
+			for [cbTime, callback] in tickCallbacks
+				if time > cbTime
+					callback.apply(null, arguments)
+				else
+					# Schedule for later
+					@bindNextTickAfter cbTime, callback
+
+	bindNextTick: (callback) ->
+		@_tickCallbacks.push [0, callback]
+
+	bindNextTickAfter: (time, callback) ->
+		@_tickCallbacks.push [time, callback]
 
 	performMove: (delay, vx) ->
 		if delay < -10
@@ -78,6 +100,44 @@ exports.Player = class Player extends Model
 
 		@x -= compensationV.x
 		@y -= compensationV.y
+
+	# Charge
+	canPerformCharge: -> not @chargeI.active and not @body.airborne
+
+	performCharge: (time, delay, direction) ->
+		startCharge = =>
+			@moveI.disable()
+			@chargeI.enable()
+
+			@chargeI.x = @speed * 4 * direction
+
+		stopCharge = =>
+			@chargeI.disable()
+			@moveI.enable()
+
+		console.log "charge request", time
+
+		@bindNextTick (time, dt) =>
+			console.log "charge perform", time
+
+			@bindNextTickAfter time + 250, (time, dt) ->
+				console.log "charge stop", time
+				stopCharge()
+
+			# Start the charge
+			startCharge()
+
+	# Charge Left
+	@defineAction 0x04
+		can: -> @canPerformCharge()
+		perform: (time, delay) ->
+			@performCharge time, delay, -1
+
+	# Charge Right
+	@defineAction 0x05
+		can: -> @canPerformCharge()
+		perform: (time, delay) ->
+			@performCharge time, delay, 1
 
 	# Stop Movement
 	@defineAction 0x00

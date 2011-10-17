@@ -93,6 +93,29 @@ exports.Application = class Application
 				@controller.bind "left", change
 			)()
 
+			# Charge
+			(=>
+				DOUBLE_TAP_DELAY = 200
+
+				actionids = left: 0x04, right: 0x05
+				lastDown = left: null, right: null
+
+				onDown = (direction) ->
+					now = new Date().getTime()
+
+					if now - lastDown[direction] <= DOUBLE_TAP_DELAY
+						console.log "queuing", direction
+						queue actionids[direction]
+
+					lastDown[direction] = now
+
+				for direction, actionid of actionids
+					((direction) =>
+						@controller.bind direction, (down) ->
+							onDown direction if down
+					)(direction)
+			)()
+
 			# Jump
 			(=>
 				jumpDelay = 250
