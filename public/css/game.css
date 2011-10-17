@@ -38,6 +38,8 @@
 
 /* Player */
 #viewport > .player {
+	z-index: 0;
+
 	border: 1px dotted black;
 	background: rgba(200, 200, 200, 0.1);
 }
@@ -172,5 +174,7 @@
 
 /* Walls */
 #viewport > .wall {
-	background: rgb(120, 120, 120);
+	z-index: 1;
+
+	background: #555;
 }
