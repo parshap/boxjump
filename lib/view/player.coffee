@@ -2,11 +2,25 @@ View = require("./view").View
 
 
 exports.PlayerView = class PlayerView extends View
-	className: "player"
+	className: "player direction-right"
 
 	initialize: ->
 		@el.appendChild new HealthView(player: @player).el
 		@el.appendChild new ArmView(player: @player).el
+
+		@player.bind "change:direction", =>
+			direction = @player.get("direction")
+
+			# Right
+			if direction > 0
+				@removeClass "direction-left"
+				@addClass "direction-right"
+
+			# Left
+			else if direction
+				@removeClass "direction-right"
+				@addClass "direction-left"
+
 
 	update: ->
 		sides = @player.body.sides()

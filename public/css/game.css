@@ -36,12 +36,21 @@
 }
 
 
-/* Player */
+/* ## Player */
 #viewport > .player {
 	z-index: 0;
 
 	border: 1px dotted black;
 	background: rgba(200, 200, 200, 0.1);
+}
+
+/* Player Direction */
+#viewport > .player.direction-left {
+	-webkit-transform: scaleX(-1);
+}
+
+#viewport > .player.direction-right {
+	-webkit-transform: scaleX(1);
 }
 
 /* Playe Arm */
@@ -111,7 +120,7 @@
 #viewport > .player > .arm {
 	position: absolute;
 
-	left: 34px;
+	left: 26px;
 	top: 24px;
 
 	width: 36px;

@@ -23,6 +23,8 @@ exports.Player = class Player extends Model
 
 		health: 100
 
+		direction: 1 # 1 = right, -1 = left
+
 	initialize: ->
 		# Create a body for this player
 		@body = new Rect(
@@ -89,6 +91,11 @@ exports.Player = class Player extends Model
 
 			return
 
+		# Set the current direction if moving
+		@set(direction: 1) if vx > 0
+		@set(direction: -1) if vx < 0
+
+		# Max delay compensation of 100ms
 		delay = 100 if delay > 100
 
 		compensationV = new Vector
