@@ -31,8 +31,39 @@
 #viewport > .player {
 	z-index: 0;
 
-	border: 1px dotted black;
+	border: 1px dotted #222;
 	background: rgba(200, 200, 200, 0.1);
+}
+
+/* Player headband */
+#viewport > .player:after {
+	content: "";
+	position: absolute;
+	display: block;
+
+	left: 0;
+	top: 4px;
+
+	height: 6px;
+	width: 100%;
+
+	background-color: #222;
+}
+
+/* Player eye */
+#viewport > .player:before {
+	content: "";
+	position: absolute;
+	display: block;
+
+	right: 10px;
+	top: 16px;
+
+	width: 8px;
+	height: 8px;
+	border-radius: 3px;
+
+	background-color: #222;
 }
 
 /* Player Direction */
@@ -130,11 +161,12 @@
 #viewport > .player > .arm {
 	position: absolute;
 
-	left: 26px;
-	top: 24px;
+	left: 36px;
+	top: 26px;
 
 	width: 36px;
 	height: 36px;
+	z-index: 1;
 
 	background: red;
 	border: 1px dotted #333;
