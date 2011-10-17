@@ -118,29 +118,19 @@ exports.Application = class Application
 
 			# Jump
 			(=>
-				jumpDelay = 200
-				lastJumpDown = null
-				lastJumpUp = null
-				jumpTimeout = null
+				JUMP_DELAY = 120
+
+				jumping = false
 
 				jump = =>
-					if @controller.state.jump
-						lastJumpUp = new Date().getTime()
-
-					length = lastJumpUp - lastJumpDown
-					console.log "jump length:", length
-
 					power = if @controller.state.jump then 1 else 0.75
+					jumping = false
+
 					queue 0x03, power
-					jumpTimeout = null
 
 				@controller.bind "jump", (down) =>
-					if not jumpTimeout and down and @player.predictCanPerform 0x03
-						jumpTimeout = setTimeout jump, jumpDelay
-
-					now = new Date().getTime()
-					lastJumpDown = now if down
-					lastJumpUp = now if not down
+					if down and @player.predictCanPerform 0x03
+						setTimeout jump, JUMP_DELAY if not jumping
 			)()
 		)()
 
