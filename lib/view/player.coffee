@@ -8,6 +8,7 @@ exports.PlayerView = class PlayerView extends View
 		@el.appendChild new HealthView(player: @player).el
 		@el.appendChild new ArmView(player: @player).el
 
+		# Facing direction
 		@player.bind "change:direction", =>
 			direction = @player.get("direction")
 
@@ -20,6 +21,15 @@ exports.PlayerView = class PlayerView extends View
 			else if direction
 				@removeClass "direction-right"
 				@addClass "direction-left"
+
+		# Jump animation
+		@player.bind "pre-action:3", =>
+			@addClass "jumping"
+
+			# Remove jumping class after some time
+			setTimeout (=>
+				@removeClass "jumping"
+			), 300
 
 
 	update: ->

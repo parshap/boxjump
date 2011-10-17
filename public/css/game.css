@@ -44,6 +44,25 @@
 	-webkit-transform: scaleX(1);
 }
 
+/* Player Jumping */
+@-webkit-keyframes player-jump {
+	0% {
+		margin-top: 0;
+	}
+
+	40% {
+		margin-top: 20px;
+	}
+
+	100% {
+		margin-top: 0;
+	}
+}
+
+#viewport > .player.jumping {
+	-webkit-animation: player-jump 0.3s;
+}
+
 /* Playe Arm */
 @-webkit-keyframes arm-idle {
 	0% {
