@@ -6,6 +6,7 @@ exports.PlayerView = class PlayerView extends View
 
 	initialize: ->
 		@el.appendChild new HealthView(player: @player).el
+		@el.appendChild new ArmView(player: @player).el
 
 	update: ->
 		sides = @player.body.sides()
@@ -17,6 +18,10 @@ exports.PlayerView = class PlayerView extends View
 
 	tick: (time, dt) ->
 		@update()
+
+
+class ArmView extends View
+	className: "arm"
 
 
 class HealthView extends View
