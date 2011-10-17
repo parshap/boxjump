@@ -12,9 +12,10 @@ exports.List = class List extends Event
 		return this
 
 	remove: (thing, options = {}) ->
-		@array.splice @array.indexOf(thing), 1
+		if (index = @array.indexOf thing) > -1
+			@array.splice thing, 1
 
-		@trigger "remove", arguments... if not options.silent
+			@trigger "remove", arguments... if not options.silent
 
 		return this
 
