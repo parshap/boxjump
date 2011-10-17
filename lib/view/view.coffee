@@ -24,3 +24,21 @@ exports.View = class View extends Event
 		@initialize()
 
 	initialize: ->
+
+	getClasses: ->
+		if @el.className then @el.className.split(/\s+/) else []
+
+	addClass: (value) ->
+		classes = @getClasses()
+
+		classes.push value if value not in classes
+
+		@el.className = classes.join(" ")
+
+	removeClass: (value) ->
+		classes = @getClasses()
+
+		if (index = classes.indexOf value) > -1
+			classes.splice classes.indexOf(value), 1
+
+		@el.className = classes.join(" ")
