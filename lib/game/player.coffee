@@ -102,7 +102,7 @@ exports.Player = class Player extends Model
 		@y -= compensationV.y
 
 	# Charge
-	canPerformCharge: -> not @chargeI.active and not @body.airborne
+	canPerformCharge: -> not @chargeI.active
 
 	performCharge: (time, delay, direction) ->
 		startCharge = =>
@@ -115,13 +115,11 @@ exports.Player = class Player extends Model
 			@chargeI.disable()
 			@moveI.enable()
 
-		console.log "charge request", time
+		# @TODO: Stop charge after running into something
+		# @TODO: Charge only once per airborne
 
 		@bindNextTick (time, dt) =>
-			console.log "charge perform", time
-
 			@bindNextTickAfter time + 250, (time, dt) ->
-				console.log "charge stop", time
 				stopCharge()
 
 			# Start the charge
@@ -161,7 +159,6 @@ exports.Player = class Player extends Model
 	@defineAction 0x03
 		can: -> ! @body.airborne
 		perform: (time, delay, power) ->
-			console.log "jump called", delay
 			if delay < -10
 				console.log "jump scheduling"
 				@bind "tick.next", (time, dt) =>
