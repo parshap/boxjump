@@ -20,7 +20,13 @@ exports.Application = class Application
 
 	constructor: ->
 		@_playerCount = 0
+
 		@_actionRequests = []
+
+		@_statesToSend = []
+		@_lastStates = {}
+		@_lastSentStates = {}
+		@_lastSentStatesTime = null
 
 		@_initializeNet()
 		@_initializeReceiver()
@@ -95,6 +101,9 @@ exports.Application = class Application
 		# Update the game state
 		@game.tick time, dt
 
+		# Process current states, saving any to be sent to clients
+		@_processStates time
+
 		# Send any output to clients
 		@_sendStates time
 		@_sendActions time
@@ -106,17 +115,54 @@ exports.Application = class Application
 	# A snapshot of states at the last time updates were sent
 	_lastStates: {}
 
+	_processStates: (time) ->
+		states = @_getStates(time)
+
+		isFloatZero = (num) -> -0.00001 < num < 0.00001
+
+		isSignChanged = (a, b) ->
+			# No change if both are zero
+			if isFloatZero(a)
+				return not isFloatZero(b)
+
+			else
+				return true if isFloatZero(b)
+
+				return (a > 0 and b <= 0) or (a < 0 and b >= 0)
+
+		for state in states
+			lastState = @_lastStates[state.id]
+			lastSentState = @_lastSentStates[state.id]
+
+			shouldSend =
+				# If we've never sent this before
+				not lastState or
+
+				# If sign of the velocity has changed
+				isSignChanged(state.velocity.x, lastState.velocity.x) or
+				isSignChanged(state.velocity.y, lastState.velocity.y)
+
+			if shouldSend
+				@_statesToSend.push state
+
+				# Send the previous state too
+				if lastState and not lastState.sent
+					@_statesToSend.push lastState
+
+				@_lastSentStates[state.id] = state
+				state.sent = true
+
+		(@_lastStates[state.id] = state) for state in states
+
 	# Sends the current states
 	_sendStates: (time) ->
 		# Send only once every @updateInterval
-		return if (time - @_lastStatesSent) < @updateInterval
+		return if (time - @_lastSentStatesTime) < @updateInterval
 
 		send = (time, states) =>
 			message = new Message 0x10, [time]
 
 			for state in states
-				state.sent = true
-
 				message.arguments.push(
 					state.id
 					state.position.x
@@ -125,46 +171,55 @@ exports.Application = class Application
 
 			@net.send message
 
-		# Current states
-		states = @_getStates()
+		# Add current states along to any intermediate states we're sending
+		for id, state of @_lastStates
+			lastSentState = @_lastSentStates[state.id]
 
-		# States to be sent
-		sendStates = []
+			if not _.isEqual state.position, lastSentState.position
+				@_statesToSend.push state
 
-		# We only need to send a subset of the current states
-		for state in states
-			lastState = @_lastStates[state.id]
+		# Make sure the states are sorted by time
+		@_statesToSend.sort (a, b) -> a.time - b.time
 
-			# If the position has changed, we need to send this state
-			if not  _.isEqual state.position, lastState?.position
-				# We will ensure the last state is known also
-				# @TODO: We should send the time right before the change
-				# occured.
-				if lastState and not lastState.sent
-					send @_lastStatesSent, [lastState]
+		states = []
+		lastTime = null
 
-				sendStates.push state
+		for state in @_statesToSend
+			# Flush the buffered states when the time changes
+			if state.time != lastTime
+				# Send the buffered states of lastTime
+				send lastTime, states if states.length
 
-		# Send the states
-		send time, sendStates if sendStates.length
+				# Clear the buffer
+				states = []
 
-		# Save the current states
-		@_lastStates = {}
-		@_lastStates[state.id] = state for state in states
+			# Buffer this state to be sent
+			states.push state
+
+			lastTime = state.time
+
+		# Flush the last set of states
+		send lastTime, states if states.length
+
+		@_statesToSend = []
 
 		# Save the time we sent an update
-		@_lastStatesSent = time
+		@_lastSentStatesTime = time
 
 	# Generate a full copy of the current state
-	_getStates: ->
+	_getStates: (time) ->
 		states = []
 
 		@game.players.forEach (player) ->
 			states.push
 				id: player.id
+				time: time
 				position:
 					x: player.body.x
 					y: player.body.y
+				velocity:
+					x: player.body._lastMovedV.x
+					y: player.body._lastMovedV.y
 
 		return states
 

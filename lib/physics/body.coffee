@@ -15,9 +15,11 @@ exports.Body = class Body
 
 	fallAffinity: 1.0
 
-	_collidesCallbacks: []
+	_collidesCallbacks: null
 
-	_contactsCallbacks: []
+	_contactsCallbacks: null
+
+	_lastMovedV: null
 
 	constructor: (@x = 0, @y = 0) ->
 		@world = null # @TODO: Collision logic expects @world
@@ -25,6 +27,9 @@ exports.Body = class Body
 		@velocity = new Vector
 		@impulses = []
 		@forces = []
+		@_collidesCallbacks = []
+		@_contactsCallbacks = []
+		@_lastMovedV = new Vector
 
 	tick: (time, dt) ->
 		interpolated = @_interpolate time
@@ -128,7 +133,7 @@ exports.Body = class Body
 
 			return movedV
 
-		movedV = move moveV
+		movedV = @_lastMovedV = move moveV
 
 		# If we attempted to move down, but only went partially or 0 (hit ground)
 		if moveV.y > 0 and movedV.y < moveV.y
