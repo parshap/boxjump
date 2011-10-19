@@ -1,6 +1,11 @@
 exports.Action = class Action
 	id: null
 
+	# Should this action be performed by proxies?
+	proxy: false
+
+	# Should this action be performed by proxies where the proxy player
+	# is the "own" player?
 	proxyOwnPlayer: false
 
 	constructor: (@player, args...) ->
@@ -33,3 +38,5 @@ exports.Action = class Action
 
 	# Predicts the outcome of the action being requested
 	predict: ->
+		# The default is to perform the action
+		@perform 0

@@ -82,8 +82,9 @@ exports.Application = class Application
 				# Queues the movement action if there was a change in movement
 				doAction = =>
 					actionid = getActionid()
+					action = new @player.actions[actionid] @player
 
-					queue actionid if actionid != lastActionid
+					queue action if actionid != lastActionid
 
 					lastActionid = actionid
 					timeoutid = null
@@ -121,10 +122,7 @@ exports.Application = class Application
 
 			# Jump
 			(=>
-				JUMP_DELAY = 120
-
 				jumping = false
-
 				action = null
 
 				jump = =>
@@ -143,7 +141,7 @@ exports.Application = class Application
 							jumping = true
 							@player.trigger "pre-jump"
 
-							setTimeout jump, JUMP_DELAY
+							setTimeout jump, action.DELAY
 			)()
 
 			# Punch

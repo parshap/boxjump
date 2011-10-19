@@ -6,6 +6,10 @@ List = require("../list").List
 
 exports.Player = class Player extends Model
 	actions:
+		0x00: require("./actions/move").MoveNone
+		0x01: require("./actions/move").MoveLeft
+		0x02: require("./actions/move").MoveRight
+
 		0x03: require("./actions/jump").Jump
 
 	speed: 10

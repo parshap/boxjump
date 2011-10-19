@@ -3,9 +3,11 @@ Action = require("./action").Action
 
 
 exports.Jump = class Jump extends Action
+	DELAY: 120
+
 	id: 0x03
 
-	DELAY: 120
+	proxy: true
 
 	can: -> ! @player.body.airborne
 
@@ -19,8 +21,6 @@ exports.Jump = class Jump extends Action
 	scheduleProxy: (time, performTime) ->
 		preTime = (performTime - @DELAY) - time
 
-		console.log "scheduling jump proxy ahead", performTime - time
-
 		if 0 <= preTime < time
 			setTimeout (=>
 				@player.trigger "pre-jump"
@@ -29,6 +29,3 @@ exports.Jump = class Jump extends Action
 		super()
 
 	proxy: (delay) ->
-
-	predict: ->
-		@perform 0
