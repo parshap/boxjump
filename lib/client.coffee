@@ -13,7 +13,9 @@ exports.Application = class Application
 
 	rtt: 0
 
-	actions: null
+	_actionProxies: null
+
+	_actionRequests: null
 
 	_tickTime: null
 
@@ -27,7 +29,8 @@ exports.Application = class Application
 		@_initializeGame()
 		@_initializeView()
 
-		@actions = []
+		@_actionProxies = []
+		@_actionRequests = []
 
 	_initializeGame: ->
 		@game = new Game()
@@ -59,8 +62,8 @@ exports.Application = class Application
 		# Actions
 		(=>
 			# Queue actions on input to occur on the next tick
-			queue = (actionid, args...) =>
-				@actions.push [ actionid, args ]
+			queue = (action) =>
+				@_actionRequests.push action
 
 			# Movement
 			# The player's current movement state is sent each time it
@@ -122,16 +125,25 @@ exports.Application = class Application
 
 				jumping = false
 
+				action = null
+
 				jump = =>
 					power = if @controller.state.jump then 1 else 0.75
+					action.arguments = [power]
+
+					queue action
+
 					jumping = false
 
-					queue 0x03, power
-
 				@controller.bind "jump", (down) =>
-					if down and @player.predictCanPerform 0x03
-						@player.trigger "pre-action:#{0x03}"
-						setTimeout jump, JUMP_DELAY if not jumping
+					if down
+						action = new @player.actions[0x03] @player
+
+						if not jumping and action.predictCan()
+							jumping = true
+							@player.trigger "pre-action:#{0x03}"
+
+							setTimeout jump, JUMP_DELAY
 			)()
 
 			# Punch
@@ -201,27 +213,37 @@ exports.Application = class Application
 		# * Process any input from input devices
 		# * Send any output to the server
 
-		# First a test occurs to see if the player can currently perform
-		# the action. If this test passes locally (client-side), then
-		# the client both sends a request to perform the action to the
-		# server and predicts the outcome of that action.
-		while @actions.length
-			[actionid, args] = @actions.pop()
+		# Process any input from the server
+		@_processActionProxies time
 
-			# Predict if the player can perform this action
-			if @player.predictCanPerform actionid, args
-
-				# Request the server to perform this action
-				@sender[0x13] time, actionid, args
-
-				# Predict the result of performing this action
-				@player.predictPerform actionid, args
+		@_processActionRequests time
 
 		# Update the game state
 		@game.tick time, dt
 
 		# Render the current game state
 		@view.tick time, dt
+
+	_processActionProxies: (time) ->
+		for { player, action, performTime } in @_actionProxies
+			player.proxyAction action, performTime
+
+	_processActionRequests: (time) ->
+		# First a test occurs to see if the player can currently perform
+		# the action. If this test passes locally (client-side), then
+		# the client both sends a request to perform the action to the
+		# server and predicts the outcome of that action.
+		
+		for action in @_actionRequests
+			# Predict if the player can perform this action
+			if action.predictCan()
+				# Request the server to perform this action
+				@sender[0x13] time, action
+
+				# Predict the result of performing this action
+				@player.predictAction action
+
+		@_actionRequests = []
 
 
 class MessageReceiver
@@ -287,17 +309,21 @@ class MessageReceiver
 
 			player.body.states.push state if player != @app.player
 
+	# Player Leave
 	0x12: (message) ->
 		[playerid] = message.arguments
 
 		if player = @app.game.getPlayer playerid
 			@app.game.removePlayer player
 
+	# Action
 	0x14: (message) ->
-		[time, playerid, actionid, args...] = message.arguments
+		[performTime, actionid, playerid, args...] = message.arguments
 
 		if player = @app.game.getPlayer playerid
-			player.perform actionid, time, 0, args
+			action = new player.actions[actionid] player, args...
+
+			@_actionProxies.push { player, action, performTime }
 
 
 class MessageSender
@@ -333,9 +359,9 @@ class MessageSender
 
 		@app.net.send new Message 0x11, [state]
 
-	# Action Request
-	0x13: (time, actionid, args=[]) ->
-		@app.net.send new Message 0x13, [time, actionid, args...]
+	# Player Action Request
+	0x13: (requestTime, action) ->
+		@app.net.send new Message 0x13, [requestTime, action.id, action.arguments]
 
 
 class Controller extends Event

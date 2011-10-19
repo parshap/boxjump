@@ -8,22 +8,24 @@ exports.Application = class Application
 
 	epoch: null
 
-	actions: null
-
 	updateInterval: 250
 
 	tickTime: null
+
+	_actionRequests: null
+
+	_actionsToSend: null
 
 	# -- Initialization
 
 	constructor: ->
 		@_playerCount = 0
-		@actions = []
+		@_actionRequests = []
 
 		@_initializeNet()
 		@_initializeReceiver()
 		@_initializeGame()
-		@_initializeActions()
+		@_initializeSendActions()
 
 	_initializeGame: ->
 		@game = new Game()
@@ -88,24 +90,7 @@ exports.Application = class Application
 
 	tick: (time, dt) ->
 		# Process input from clients
-		# This is done as the input is received by the MessageReceiver
-
-
-		# Sort queued actions by time (ascending)
-		@actions.sort (a, b) -> a.time - b.time
-
-		while @actions.length and @actions[0].time <= time
-			action = @actions.shift()
-			delay = time - action.time - action.lerp - action.rtt
-
-			console.log "Action delay", delay
-
-			if Math.abs(delay) > 200
-				console.log "Warning: Dropping action #{action.actionid} late", delay
-				continue
-
-			if player = @game.getPlayer action.playerid
-				player.perform action.actionid, action.time, delay, action.args
+		@_processActionRequests time
 
 		# Update the game state
 		@game.tick time, dt
@@ -170,32 +155,6 @@ exports.Application = class Application
 		# Save the time we sent an update
 		@_lastStatesSent = time
 
-	_actions = null
-
-	_initializeActions: ->
-		@_actions = []
-
-		@game.players.bind "add", (player) =>
-			# @TODO: listener leak?
-			player.bind "action", (actionid, args) =>
-				@_onAction player, arguments...
-
-	_sentActions: [
-		0x03 # Jump
-		0x10 # Punch
-	]
-
-	_onAction: (player, actionid, args) ->
-		if actionid in @_sentActions
-			@_actions.push [player.id, actionid, args]
-
-	# Broadcast any actions
-	_sendActions: (time) ->
-		for [playerid, actionid, args] in @_actions
-			@net.send new Message 0x14, [time, playerid, actionid, args...]
-
-		@_actions = []
-
 	# Generate a full copy of the current state
 	_getStates: ->
 		states = []
@@ -208,6 +167,39 @@ exports.Application = class Application
 					y: player.body.y
 
 		return states
+
+	_sentActions = [
+		0x03 # Jump
+		0x10 # Punch
+	]
+
+	_actionsToSend: null
+
+	_initializeSendActions: ->
+		@_actionsToSend = []
+
+		@game.players.bind "add", (player) =>
+			# @TODO: listener leak?
+			player.bind "schedule-action", (action, time) =>
+				if actionid in _sentActions
+					@_actionsToSend.push { action, time }
+
+	# Broadcast any actions
+	_sendActions: (time) ->
+		for { action, time } in @_actionsToSend
+			@net.send new Message 0x14, [
+				time, actionid,  action.player.id, action.arguments...
+			]
+
+		@_actionsToSend = []
+
+	_processActionRequests: (time) ->
+		for { player, action, requestTime, client } in @_actionRequests
+			delay = time - requestTime - client.lerp - client.rtt
+
+			player.performAction action, requestTime, delay
+
+		@_actionRequests = []
 
 class MessageReceiver
 	constructor: (@app) ->
@@ -260,12 +252,12 @@ class MessageReceiver
 	# Action Request
 	0x13: (client, message) ->
 		if player = @app.game.getPlayer client.get("playerid")
-			[time, actionid, args...] = message.arguments
+			[requestTime, actionid, args...] = message.arguments
 
-			@app.actions.push
-				playerid: client.get("playerid")
-				actionid: actionid
-				time: time
-				args: args
-				lerp: client.get("lerp")
-				rtt: client.get("rtt")
+			action = new player.actions[actionid] player, args...
+
+			@app._actionRequests.push
+				player: player
+				action: action
+				requestTime: requestTime
+				client: client

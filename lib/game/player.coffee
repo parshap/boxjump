@@ -5,10 +5,8 @@ List = require("../list").List
 
 
 exports.Player = class Player extends Model
-	@defineAction: (action, options) ->
-		@prototype.actions[action] = options
-
-	actions: {}
+	actions:
+		0x03: require("./actions/jump").Jump
 
 	speed: 10
 
@@ -132,97 +130,11 @@ exports.Player = class Player extends Model
 			# Start the charge
 			startCharge()
 
-	# Charge Left
-	@defineAction 0x04
-		can: -> @canPerformCharge()
-		perform: (time, delay) ->
-			@performCharge time, delay, -1
+	predictAction: (action) ->
 
-	# Charge Right
-	@defineAction 0x05
-		can: -> @canPerformCharge()
-		perform: (time, delay) ->
-			@performCharge time, delay, 1
+	proxyAction: (action, time) ->
 
-	# Stop Movement
-	@defineAction 0x00
-		can: -> true
-		perform: (time, delay) ->
-			@performMove delay, 0
-
-	# Move Left
-	@defineAction 0x01
-		can: -> true
-		perform: (time, delay) ->
-			@performMove delay, -@speed
-
-	# Move Right
-	@defineAction 0x02
-		can: -> true
-		perform: (time, delay) ->
-			@performMove delay, @speed
-
-	# Jump
-	@defineAction 0x03
-		can: -> ! @body.airborne
-		perform: (time, delay, power) ->
-			if delay < -10
-				console.log "jump scheduling"
-				@bind "tick.next", (time, dt) =>
-					@perform 0x03, time, delay + (dt * 1000), [power]
-
-				return
-
-			# Can't jump if airborne
-			return if @body.airborne
-
-			# Max 50ms delay compensation
-			delay = 100 if delay > 100
-
-			jumpV = new Vector x: 0, y: -(@jump * power)
-
-			# @TODO: We need to compensate jumpV for gravity when "advancing"
-			# the jump for delay compensation
-			compensationV = jumpV.clone().mul(delay / 1000)
-
-			console.log "Jumping", {
-				delay: delay
-				power: power
-				compensation: compensationV
-			}
-
-			@x += compensationV.x
-			@y += compensationV.y
-
-			@body.velocity.add jumpV
-
-	# Punch
-	@defineAction 0x10
-		can: -> true
-		perform: (time, delay, direction) ->
-
-	# ## Perform action
-
-	canPerform: (action, args=[]) ->
-		@actions[action]?.can.call @, args...
-
-	perform: (action, time, delay, args=[]) ->
-		@actions[action].perform.call @, time, delay, args...
-
-		@trigger "action:#{action}", args
-		@trigger "action", action, args
-
-	predictCanPerform: (action, args=[]) ->
-		(@actions[action].predictCan || @actions[action].can).call @, args...
-
-	predictPerform: (action, args=[]) ->
-		if @actions[action].predictPerform
-			@actions[action].predictPerform.call @, args...
-		else
-			@actions[action].perform.call @, 0, 0, args...
-
-		@trigger "action:#{action}", args
-		@trigger "action", action, args
+	performAction: (action, requestTime, delay) ->
 
 	tick: (time, dt) ->
 		@trigger "tick", time, dt
