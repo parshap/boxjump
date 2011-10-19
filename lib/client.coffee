@@ -133,6 +133,13 @@ exports.Application = class Application
 						@player.trigger "pre-action:#{0x03}"
 						setTimeout jump, JUMP_DELAY if not jumping
 			)()
+
+			# Punch
+			(=>
+				@controller.bind "punch", (down) =>
+					if down
+						queue 0x10
+			)()
 		)()
 
 	_initializeView: ->
@@ -286,6 +293,12 @@ class MessageReceiver
 		if player = @app.game.getPlayer playerid
 			@app.game.removePlayer player
 
+	0x14: (message) ->
+		[time, playerid, actionid, args...] = message.arguments
+
+		if player = @app.game.getPlayer playerid
+			player.perform actionid, time, 0, args
+
 
 class MessageSender
 	constructor: (@app) ->
@@ -333,6 +346,11 @@ class Controller extends Event
 		68: "right" # d
 
 		32: "jump" # space
+
+		37: "punch" # left arrow
+		38: "punch" # up arrow
+		39: "punch" # right arrow
+		40: "punch" # down arrow
 
 	constructor: ->
 		@state = {}

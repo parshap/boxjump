@@ -12,6 +12,8 @@ exports.Application = class Application
 
 	updateInterval: 250
 
+	tickTime: null
+
 	# -- Initialization
 
 	constructor: ->
@@ -21,6 +23,7 @@ exports.Application = class Application
 		@_initializeNet()
 		@_initializeReceiver()
 		@_initializeGame()
+		@_initializeActions()
 
 	_initializeGame: ->
 		@game = new Game()
@@ -62,8 +65,8 @@ exports.Application = class Application
 		setInterval (=>
 			now = new Date().getTime()
 			dt = (now - tickTime) / 1000
-			tickTime = now
-			gameTime = @_gameTime tickTime
+			@tickTime = tickTime = now
+			@gameTime = gameTime = @_gameTime tickTime
 
 			@tick gameTime, dt
 		), 1000/120
@@ -109,6 +112,7 @@ exports.Application = class Application
 
 		# Send any output to clients
 		@_sendStates time
+		@_sendActions time
 		@net.flush()
 
 	# The last time updates were sent
@@ -165,6 +169,32 @@ exports.Application = class Application
 
 		# Save the time we sent an update
 		@_lastStatesSent = time
+
+	_actions = null
+
+	_initializeActions: ->
+		@_actions = []
+
+		@game.players.bind "add", (player) =>
+			# @TODO: listener leak?
+			player.bind "action", (actionid, args) =>
+				@_onAction player, arguments...
+
+	_sentActions: [
+		0x03 # Jump
+		0x10 # Punch
+	]
+
+	_onAction: (player, actionid, args) ->
+		if actionid in @_sentActions
+			@_actions.push [player.id, actionid, args]
+
+	# Broadcast any actions
+	_sendActions: (time) ->
+		for [playerid, actionid, args] in @_actions
+			@net.send new Message 0x14, [time, playerid, actionid, args...]
+
+		@_actions = []
 
 	# Generate a full copy of the current state
 	_getStates: ->
