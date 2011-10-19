@@ -31,7 +31,6 @@ exports.PlayerView = class PlayerView extends View
 				@removeClass "jumping"
 			), 300
 
-
 	update: ->
 		sides = @player.body.sides()
 
@@ -47,6 +46,19 @@ exports.PlayerView = class PlayerView extends View
 class ArmView extends View
 	className: "arm"
 
+	initialize: ->
+		# Punch animation
+		@player.bind "action:#{0x10}", =>
+			@addClass "pending"
+
+			setTimeout (=>
+				@removeClass "pending"
+				@addClass "punching"
+
+				setTimeout (=>
+					@removeClass "punching"
+				), 2000
+			), 300
 
 class HealthView extends View
 	tagName: "meter"

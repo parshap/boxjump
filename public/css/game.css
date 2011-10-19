@@ -186,7 +186,7 @@
 	-webkit-animation-delay: 0.2s;
 }
 
-#viewport > .player > .arm.punch {
+#viewport > .player > .arm.punching {
 	-webkit-animation: arm-punch 2s;
 }
 
