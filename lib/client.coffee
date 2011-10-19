@@ -362,7 +362,7 @@ class MessageSender
 
 	# Player Action Request
 	0x13: (requestTime, action) ->
-		@app.net.send new Message 0x13, [requestTime, action.id, action.arguments]
+		@app.net.send new Message 0x13, [requestTime, action.id, action.arguments...]
 
 
 class Controller extends Event
