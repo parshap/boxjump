@@ -23,7 +23,7 @@ exports.PlayerView = class PlayerView extends View
 				@addClass "direction-left"
 
 		# Jump animation
-		@player.bind "pre-action:3", =>
+		@player.bind "pre-jump", =>
 			@addClass "jumping"
 
 			# Remove jumping class after some time

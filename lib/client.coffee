@@ -141,7 +141,7 @@ exports.Application = class Application
 
 						if not jumping and action.predictCan()
 							jumping = true
-							@player.trigger "pre-action:#{0x03}"
+							@player.trigger "pre-jump"
 
 							setTimeout jump, JUMP_DELAY
 			)()
@@ -226,7 +226,10 @@ exports.Application = class Application
 
 	_processActionProxies: (time) ->
 		for { player, action, performTime } in @_actionProxies
-			player.proxyAction action, performTime
+			if action.proxyOwnPlayer or player != @player
+				player.proxyAction time, action, performTime
+
+		@_actionProxies = []
 
 	_processActionRequests: (time) ->
 		# First a test occurs to see if the player can currently perform
@@ -323,7 +326,7 @@ class MessageReceiver
 		if player = @app.game.getPlayer playerid
 			action = new player.actions[actionid] player, args...
 
-			@_actionProxies.push { player, action, performTime }
+			@app._actionProxies.push { player, action, performTime }
 
 
 class MessageSender

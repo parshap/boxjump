@@ -181,23 +181,23 @@ exports.Application = class Application
 		@game.players.bind "add", (player) =>
 			# @TODO: listener leak?
 			player.bind "schedule-action", (action, time) =>
-				if actionid in _sentActions
+				if action.id in _sentActions
 					@_actionsToSend.push { action, time }
 
 	# Broadcast any actions
 	_sendActions: (time) ->
 		for { action, time } in @_actionsToSend
 			@net.send new Message 0x14, [
-				time, actionid,  action.player.id, action.arguments...
+				time, action.id,  action.player.id, action.arguments...
 			]
 
 		@_actionsToSend = []
 
 	_processActionRequests: (time) ->
 		for { player, action, requestTime, client } in @_actionRequests
-			delay = time - requestTime - client.lerp - client.rtt
+			delay = time - requestTime - client.get("lerp") - client.get("rtt")
 
-			player.performAction action, requestTime, delay
+			player.requestAction time, action, requestTime, delay
 
 		@_actionRequests = []
 

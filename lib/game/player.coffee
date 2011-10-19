@@ -131,10 +131,34 @@ exports.Player = class Player extends Model
 			startCharge()
 
 	predictAction: (action) ->
+		action.predict()
 
-	proxyAction: (action, time) ->
+		@trigger "predict-action", action
 
-	performAction: (action, requestTime, delay) ->
+	proxyAction: (time, action, performTime) ->
+		performTime = action.scheduleProxy time, performTime
+
+		# @TODO: On-tick-after (performTime - ticktime/2) ?
+		@bindNextTickAfter performTime, (time, dt) =>
+			action.proxy (time - performTime)
+
+			@trigger "action", action
+
+		@trigger "schedule-action", action, performTime
+
+	requestAction: (time, action, requestTime, delay) ->
+		performTime = action.schedule time, requestTime, delay
+
+		# @TODO: On-tick-after (performTime - ticktime/2) ?
+		@bindNextTickAfter performTime, (time, dt) =>
+			@performAction action, (time - performTime)
+
+		@trigger "schedule-action", action, performTime
+
+	performAction: (action, delay) ->
+		action.perform delay
+
+		@trigger "action", action
 
 	tick: (time, dt) ->
 		@trigger "tick", time, dt
