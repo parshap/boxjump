@@ -104,12 +104,14 @@ exports.Application = class Application
 				actionids = left: 0x04, right: 0x05
 				lastDown = left: null, right: null
 
-				onDown = (direction) ->
+				onDown = (direction) =>
 					now = new Date().getTime()
 
 					if now - lastDown[direction] <= DOUBLE_TAP_DELAY
-						console.log "queuing", direction
-						queue actionids[direction]
+						actionid = actionids[direction]
+						action = new @player.actions[actionid] @player
+
+						queue action
 
 					lastDown[direction] = now
 

@@ -12,6 +12,11 @@ exports.Player = class Player extends Model
 
 		0x03: require("./actions/jump").Jump
 
+		0x04: require("./actions/charge").ChargeLeft
+		0x05: require("./actions/charge").ChargeRight
+
+		0x10: require("./actions/punch").Punch
+
 	speed: 10
 
 	jump: 14
@@ -85,54 +90,6 @@ exports.Player = class Player extends Model
 
 	bindNextTickAfter: (time, callback) ->
 		@_tickCallbacks.push [time, callback]
-
-	performMove: (delay, vx) ->
-		if delay < -10
-			@bind "tick.next", (time, dt) =>
-				@performMove delay + (dt * 1000), vx
-
-			return
-
-		# Set the current direction if moving
-		@set(direction: 1) if vx > 0
-		@set(direction: -1) if vx < 0
-
-		# Max delay compensation of 100ms
-		delay = 100 if delay > 100
-
-		compensationV = new Vector
-		compensationV.add @moveI.clone().mul(delay / 1000)
-
-		@moveI.x = vx
-
-		compensationV.add @moveI.clone().mul(delay / 1000)
-
-		@x -= compensationV.x
-		@y -= compensationV.y
-
-	# Charge
-	canPerformCharge: -> not @chargeI.active
-
-	performCharge: (time, delay, direction) ->
-		startCharge = =>
-			@moveI.disable()
-			@chargeI.enable()
-
-			@chargeI.x = @speed * 4 * direction
-
-		stopCharge = =>
-			@chargeI.disable()
-			@moveI.enable()
-
-		# @TODO: Stop charge after running into something
-		# @TODO: Charge only once per airborne
-
-		@bindNextTick (time, dt) =>
-			@bindNextTickAfter time + 250, (time, dt) ->
-				stopCharge()
-
-			# Start the charge
-			startCharge()
 
 	predictAction: (action) ->
 		action.predict()
