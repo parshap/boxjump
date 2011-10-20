@@ -32,7 +32,7 @@
 	z-index: 0;
 
 	border: 1px dotted #222;
-	background: rgba(200, 200, 200, 0.1);
+	background: rgba(170, 185, 200, 0.2);
 }
 
 /* Player headband */
@@ -138,23 +138,29 @@
 	0% {
 		-webkit-transform: scale(2);
 		margin-left: 0;
+		background-color: rgba(255, 80, 80, 1.0);
 	}
 
 	10% {
-		-webkit-transform: scale(1.8);
+		-webkit-transform: scale(1.8) rotate(-900deg);
 		margin-left: 90px;
 	}
 
+	30% {
+		background-color: rgba(255, 80, 80, 1.0);
+	}
+
 	60% {
-		-webkit-transform: scale(1.8);
+		-webkit-transform: scale(1.8) rotate(-900deg);
 		margin-left: 90px;
 	}
 
 	/* End at idle state */
 	100% {
-		-webkit-transform: scale(1);
+		-webkit-transform: scale(1) rotate(-900deg);
 		margin-left: 0;
 		margin-top: -2px;
+		background: rgba(200, 140, 140, 0.75);
 	}
 }
 
@@ -168,7 +174,7 @@
 	height: 36px;
 	z-index: 1;
 
-	background: red;
+	background: rgba(200, 140, 140, 0.75);
 	border: 1px dotted #333;
 
 	-webkit-transition: all 0.2s ease-in-out;
@@ -179,6 +185,10 @@
 #viewport > .player > .arm.pending {
 	left: 50px;
 	-webkit-transform: scale(2);
+
+	background: rgba(220, 120, 100, 0.75);
+
+	-webkit-transition: all 0.2s, background-color 1s;
 
 	-webkit-animation-name: arm-pending;
 	-webkit-animation-duration: 0.1s;
