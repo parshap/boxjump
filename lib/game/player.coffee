@@ -87,7 +87,7 @@ exports.Player = class Player extends Model
 				cbInTime -= dt * 1000
 
 				if cbInTime <= 0
-					callback.apply(null, arguments)
+					callback.call(null, time, dt, -cbInTime)
 				else
 					# Schedule for later
 					@bindNextTickIn cbInTime, callback
@@ -97,8 +97,10 @@ exports.Player = class Player extends Model
 			@_tickAfterCallbacks = []
 
 			for [cbTime, callback] in afterCallbacks
-				if time >= cbTime
-					callback.apply(null, arguments)
+				delay = time - cbTime
+
+				if delay >= 0
+					callback.call(null, time, dt, delay)
 				else
 					# Schedule for later
 					@bindNextTickAfter cbTime, callback
