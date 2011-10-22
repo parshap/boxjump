@@ -105,14 +105,21 @@ exports.Player = class Player extends Model
 			for name, value of @_cooldowns
 				@_cooldowns[name] -= dt
 
-	cooldown: (name="global", value) ->
-		# Getter
-		if not value
-			return !! @_cooldowns[name]
+	onCooldown: (name="global", time=null) ->
+		if not time?
+			time = @game.time
 
-		# Setter
-		else if not @_cooldown[name] or @_cooldowns[name] < value
-			@_cooldowns[name] = value
+		return @_cooldowns[name]? and @_cooldowns[name] >= time
+
+	setCooldown: (nameOrGlobalTime, time=null, forceSet=false) ->
+		if time?
+			name = nameOrGlobalTime
+		else
+			name = "global"
+			time = nameOrGlobalTime
+
+		if not forceSet or not @_cooldowns[name]? or @_cooldowns[name] < time
+			@_cooldowns[name] = time
 
 	# ## Actions
 
