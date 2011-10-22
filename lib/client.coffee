@@ -5,7 +5,7 @@ Message = require("./net/message").Message
 GameView = require("./view/game").GameView
 
 
-exports.Application = class Application
+exports.Application = class Application extends Event
 
 	epoch: null
 
@@ -22,18 +22,21 @@ exports.Application = class Application
 	# -- Initialization
 
 	constructor: ->
+		super()
+
 		@_initializeController()
 		@_initializeNet()
 		@_initializeReceiver()
 		@_initializeSender()
 		@_initializeGame()
 		@_initializeView()
+		@_initializeMove()
 
 		@_actionProxies = []
 		@_actionRequests = []
 
 	_initializeGame: ->
-		@game = new Game()
+		@game = new Game
 			lerp: @lerp
 
 	_initializeNet: ->
@@ -65,38 +68,6 @@ exports.Application = class Application
 			# Queue actions on input to occur on the next tick
 			queue = (action) =>
 				@_actionRequests.push action
-
-			# Movement
-			# The player's current movement state is sent each time it
-			# changes (buffered by 10ms)
-			(=>
-				timeoutid = null
-				lastActionid = 0x00
-
-				getActionid = =>
-					if @controller.state.left and not @controller.state.right
-						return 0x01
-					if @controller.state.right and not @controller.state.left
-						return 0x02
-					return 0x00
-
-				# Queues the movement action if there was a change in movement
-				doAction = =>
-					actionid = getActionid()
-					action = new @player.actions[actionid] @player
-
-					queue action if actionid != lastActionid
-
-					lastActionid = actionid
-					timeoutid = null
-
-				# "Buffer" other state changes and send periodically
-				change = ->
-					timeoutid = setTimeout doAction, 10 if not timeoutid
-
-				@controller.bind "right", change
-				@controller.bind "left", change
-			)()
 
 			# Charge
 			(=>
@@ -151,7 +122,8 @@ exports.Application = class Application
 			(=>
 				@controller.bind "punch", (down) =>
 					if down
-						queue 0x10
+						action = new @player.actions[0x10] @player
+						queue action
 			)()
 		)()
 
@@ -208,6 +180,10 @@ exports.Application = class Application
 		@player = player
 		@player.inputDelay = @rtt
 
+		@trigger "player", player
+
+		return this
+
 	tick: (time, dt) ->
 		# These tasks are handled within event callbacks on async io
 		# components (such as net or a controller)
@@ -216,6 +192,9 @@ exports.Application = class Application
 		# * Send any output to the server
 
 		@game.time = time
+
+		# Sample input for movement actions
+		@_sampleMoveInput()
 
 		# Process any input from the server
 		@_processActionProxies time
@@ -227,6 +206,37 @@ exports.Application = class Application
 
 		# Render the current game state
 		@view.tick time, dt
+
+	# Movement Input
+
+	# Private function
+	_getMoveActionid = (state) ->
+		if state.left and not state.right
+			return 0x01
+		if state.right and not state.left
+			return 0x02
+		return 0x00
+
+	_lastMoveId: 0x00
+
+	_initializeMove: ->
+		onAction = (action) =>
+			if action.id in [0x00, 0x01, 0x02]
+				@_lastMoveId = action.id
+
+		@bind "player", (player) ->
+			player.bind "predict-action", onAction
+			player.bind "action", onAction
+
+	_sampleMoveInput: ->
+		return if not @player
+
+		id = _getMoveActionid(@controller.state)
+
+		if id != @_lastMoveId
+			@_actionRequests.push new @player.actions[id] @player
+
+	# Actions
 
 	_processActionProxies: (time) ->
 		for { player, action, performTime } in @_actionProxies
@@ -273,7 +283,7 @@ class MessageReceiver
 				console.log "Warning: Discarding time sync with rtt", rtt
 				return
 
-			if Math.abs(diff) > 100
+			if Math.abs(diff) > 50
 				console.log "Warning: Latency changed - synchronizing time", diff
 				@app.epoch -= (received - @app.lerp) - @app._gameTime(now)
 				@app.rtt = rtt
