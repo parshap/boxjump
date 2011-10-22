@@ -48,12 +48,11 @@ exports.Charge = class Charge extends Action
 		# Compensate for delay
 		@compensate delay
 
-		@player.bindNextTick (time, dt) =>
-			@player.bindNextTickAfter time + 250, (time, dt) ->
-				stopCharge()
+		@player.bindNextTickIn 250, (time, dt) ->
+			stopCharge()
 
-			# Start the charge
-			startCharge()
+		# Start the charge
+		startCharge()
 
 
 exports.ChargeLeft = class ChargeLeft extends Charge
