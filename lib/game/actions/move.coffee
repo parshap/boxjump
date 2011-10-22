@@ -18,6 +18,8 @@ exports.Move = class Move extends Action
 	constructor: (@player, @vx) ->
 		super @player
 
+	can: -> not @player.onCooldown "move"
+
 	compensate: (delay) ->
 		return if not @player.moveI.active
 
@@ -50,6 +52,9 @@ exports.Move = class Move extends Action
 
 exports.MoveNone = class MoveNone extends Move
 	id: 0x00
+
+	# You can always stop
+	can: -> true
 
 	constructor: (@player) ->
 		super @player, 0
