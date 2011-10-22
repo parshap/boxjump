@@ -7,6 +7,13 @@ map = require("./map")
 
 
 exports.Game = class Game extends Model
+	# The current game time
+	# An outside source (that also drives the game loop) is responsible
+	# for updating this at the *beginning* of every tick.
+	time: null
+
+	lerp: null
+
 	initialize: ->
 		@players = new PlayerList
 		@walls = new wall.WallList
@@ -25,6 +32,7 @@ exports.Game = class Game extends Model
 	createPlayer: (playerid) ->
 		player = new Player
 			id: playerid
+			game: @
 
 		@players.add player
 		@world.add player.body

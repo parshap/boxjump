@@ -95,6 +95,8 @@ exports.Application = class Application
 		return player
 
 	tick: (time, dt) ->
+		@game.time = time
+
 		# Process input from clients
 		@_processActionRequests time
 

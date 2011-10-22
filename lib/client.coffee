@@ -213,6 +213,8 @@ exports.Application = class Application
 		# * Process any input from input devices
 		# * Send any output to the server
 
+		@game.time = time
+
 		# Process any input from the server
 		@_processActionProxies time
 
