@@ -64,6 +64,7 @@ exports.Player = class Player extends Model
 		@chargeI = @body.impulse(x: 0, y: 0).disable()
 
 		@_initializeTicks()
+	# ## Bind On Tick
 
 	_initializeTicks: ->
 		@bind "tick", (time, dt) =>
@@ -72,24 +73,43 @@ exports.Player = class Player extends Model
 
 			callback.apply(null, arguments) for callback in callbacks
 
-		@_tickCallbacks = []
+		@_tickInCallbacks = []
+		@_tickAfterCallbacks = []
 
 		@bind "tick", (time, dt) =>
-			tickCallbacks = @_tickCallbacks
-			@_tickCallbacks = []
+			# Tick In callbacks
+			inCallbacks = @_tickInCallbacks
+			@_tickInCallbacks = []
 
-			for [cbTime, callback] in tickCallbacks
-				if time > cbTime
+			for [cbInTime, callback] in inCallbacks
+				cbInTime -= dt
+
+				if cbInTime <= 0
+					callback.apply(null, arguments)
+				else
+					# Schedule for later
+					@bindNextTickIn cbInTime, callback
+
+			# Tick After callbacks
+			afterCallbacks = @_tickAfterCallbacks
+			@_tickAfterCallbacks = []
+
+			for [cbTime, callback] in afterCallbacks
+				if time >= cbTime
 					callback.apply(null, arguments)
 				else
 					# Schedule for later
 					@bindNextTickAfter cbTime, callback
 
 	bindNextTick: (callback) ->
-		@_tickCallbacks.push [0, callback]
+		@_tickInCallbacks.push [0, callback]
 
 	bindNextTickAfter: (time, callback) ->
-		@_tickCallbacks.push [time, callback]
+		@_tickAfterCallbacks.push [time, callback]
+
+	bindNextTickIn: (inTime, callback) ->
+		@_tickInCallbacks.push [inTime, callback]
+
 
 	predictAction: (action) ->
 		action.predict()
