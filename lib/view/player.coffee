@@ -47,18 +47,32 @@ class ArmView extends View
 	className: "arm"
 
 	initialize: ->
-		# Punch animation
-		@player.bind "action:#{0x10}", =>
-			@addClass "pending"
+		@player.bind "predict-action", (action) =>
+			@predictPunch() if action.id == 0x10
+
+		@player.bind "schedule-action", (action) =>
+			@predictPunch() if action.id == 0x10
+
+		@player.bind "action", (action) =>
+			@punch() if action.id == 0x10
+
+
+	predictPunch: ->
+		@addClass "pending"
+
+	# Punch animation
+	punch: ->
+		@addClass "pending"
+
+		setTimeout (=>
+			@removeClass "pending"
+			@addClass "punching"
 
 			setTimeout (=>
-				@removeClass "pending"
-				@addClass "punching"
+				@removeClass "punching"
+			), 2000
+		), 300
 
-				setTimeout (=>
-					@removeClass "punching"
-				), 2000
-			), 300
 
 class HealthView extends View
 	tagName: "meter"
