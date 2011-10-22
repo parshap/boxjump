@@ -31,6 +31,6 @@ exports.Jump = class Jump extends Action
 				@player.trigger "pre-jump"
 			), (early - @DELAY)
 
-		super()
+		super arguments...
 
 	proxy: (delay) ->
