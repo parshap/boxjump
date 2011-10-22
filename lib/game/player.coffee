@@ -70,35 +70,16 @@ exports.Player = class Player extends Model
 
 	# ## Bind On Tick
 
+	_tickCallbacks: null
+
 	_initializeTicks: ->
-		@bind "tick", (time, dt) =>
-			callbacks = @_callbacks["tick.next"] or []
-			@_callbacks["tick.next"] = []
-
-			callback.apply(null, arguments) for callback in callbacks
-
-		@_tickInCallbacks = []
-		@_tickAfterCallbacks = []
+		@_tickCallbacks = []
 
 		@bind "tick", (time, dt) =>
-			# Tick In callbacks
-			inCallbacks = @_tickInCallbacks
-			@_tickInCallbacks = []
+			callbacks = @_tickCallbacks
+			@_tickCallbacks = []
 
-			for [cbInTime, callback] in inCallbacks
-				cbInTime -= dt * 1000
-
-				if cbInTime <= 0
-					callback.call(null, time, dt, -cbInTime)
-				else
-					# Schedule for later
-					@bindNextTickIn cbInTime, callback
-
-			# Tick After callbacks
-			afterCallbacks = @_tickAfterCallbacks
-			@_tickAfterCallbacks = []
-
-			for [cbTime, callback] in afterCallbacks
+			for [cbTime, callback] in callbacks
 				delay = time - cbTime
 
 				if delay >= 0
@@ -108,13 +89,10 @@ exports.Player = class Player extends Model
 					@bindNextTickAfter cbTime, callback
 
 	bindNextTick: (callback) ->
-		@_tickInCallbacks.push [0, callback]
+		@_tickCallbacks.push [0, callback]
 
 	bindNextTickAfter: (time, callback) ->
-		@_tickAfterCallbacks.push [time, callback]
-
-	bindNextTickIn: (inTime, callback) ->
-		@_tickInCallbacks.push [inTime, callback]
+		@_tickCallbacks.push [time, callback]
 
 	# ## Cooldowns
 
