@@ -16,7 +16,7 @@ exports.Move = class Move extends Action
 		return v
 
 	constructor: (@player, @vx) ->
-		super arguments...
+		super @player
 
 	compensate: (delay) ->
 		return if not @player.moveI.active

@@ -6,7 +6,7 @@ exports.Charge = class Charge extends Action
 	vx: 0
 
 	constructor: (@player, @vx) ->
-		super arguments...
+		super @player
 
 	can: -> not @player.chargeI.active
 
