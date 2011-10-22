@@ -64,6 +64,8 @@ exports.Player = class Player extends Model
 		@chargeI = @body.impulse(x: 0, y: 0).disable()
 
 		@_initializeTicks()
+		@_initializeCooldowns()
+
 	# ## Bind On Tick
 
 	_initializeTicks: ->
@@ -110,6 +112,27 @@ exports.Player = class Player extends Model
 	bindNextTickIn: (inTime, callback) ->
 		@_tickInCallbacks.push [inTime, callback]
 
+	# ## Cooldowns
+
+	_cooldowns: null
+
+	_initializeCooldowns: ->
+		@_cooldowns = {}
+
+		@bind "tick", (time, dt) =>
+			for name, value of @_cooldowns
+				@_cooldowns[name] -= dt
+
+	cooldown: (name="global", value) ->
+		# Getter
+		if not value
+			return !! @_cooldowns[name]
+
+		# Setter
+		else if not @_cooldown[name] or @_cooldowns[name] < value
+			@_cooldowns[name] = value
+
+	# ## Actions
 
 	predictAction: (action) ->
 		action.predict()
