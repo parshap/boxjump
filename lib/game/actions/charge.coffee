@@ -1,16 +1,38 @@
 Action = require("./action").Action
+Move = require("./move").Move
 
 
 exports.Charge = class Charge extends Action
-	# Charge
+	vx: 0
+
+	constructor: (@player, @vx) ->
+		super arguments...
+
 	can: -> not @player.chargeI.active
 
-	charge: (direction, delay) ->
+	compensate: (delay) ->
+		return if not @player.moveI.active
+
+		# Max delay compensation of 100ms
+		delay = 100 if delay > 100
+
+		console.log "compensating", delay
+
+		compensationV = Move.compensateMove(
+			delay
+			@player.moveI
+			y: 0, x: @vx
+		)
+
+		@player.x += compensationV.x
+		@player.y += compensationV.y
+
+	perform: (delay) ->
 		startCharge = =>
 			@player.moveI.disable()
 			@player.chargeI.enable()
 
-			@player.chargeI.x = @player.speed * 4 * direction
+			@player.chargeI.x = @vx
 
 		stopCharge = =>
 			@player.chargeI.disable()
@@ -18,7 +40,13 @@ exports.Charge = class Charge extends Action
 
 		# @TODO: Stop charge after running into something
 		# @TODO: Charge only once per airborne
-		# @TODO: Compensate for delay (like move)
+
+		# Set the current direction if moving
+		@player.set(direction: 1) if @vx > 0
+		@player.set(direction: -1) if @vx < 0
+
+		# Compensate for delay
+		@compensate delay
 
 		@player.bindNextTick (time, dt) =>
 			@player.bindNextTickAfter time + 250, (time, dt) ->
@@ -27,15 +55,16 @@ exports.Charge = class Charge extends Action
 			# Start the charge
 			startCharge()
 
+
 exports.ChargeLeft = class ChargeLeft extends Charge
 	id: 0x04
 
-	perform: (delay) ->
-		@charge -1, delay
+	constructor: (@player) ->
+		super @player, -@player.speed * 4
 
 
 exports.ChargeRight = class ChargeRight extends Charge
 	id: 0x05
 
-	perform: (delay) ->
-		@charge 1, delay
+	constructor: (@player) ->
+		super @player, @player.speed * 4
