@@ -48,7 +48,8 @@ exports.Charge = class Charge extends Action
 		# Compensate for delay
 		@compensate delay
 
-		@player.bindNextTickIn 250, (time, dt) ->
+		stopTime = @player.game.time + 250
+		@player.bindNextTickAfter stopTime, (time, dt) ->
 			stopCharge()
 
 		# Start the charge
