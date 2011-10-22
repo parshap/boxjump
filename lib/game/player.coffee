@@ -84,7 +84,7 @@ exports.Player = class Player extends Model
 			@_tickInCallbacks = []
 
 			for [cbInTime, callback] in inCallbacks
-				cbInTime -= dt
+				cbInTime -= dt * 1000
 
 				if cbInTime <= 0
 					callback.apply(null, arguments)
