@@ -21,6 +21,8 @@ exports.Player = class Player extends Model
 
 	jump: 14
 
+	inputDelay: 0
+
 	defaults:
 		width: 1.5
 		height: 2

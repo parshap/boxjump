@@ -34,6 +34,7 @@ exports.Application = class Application
 
 	_initializeGame: ->
 		@game = new Game()
+			lerp: @lerp
 
 	_initializeNet: ->
 		@net = new net.Client()
@@ -205,6 +206,7 @@ exports.Application = class Application
 
 	setPlayer: (player) ->
 		@player = player
+		@player.inputDelay = @rtt
 
 	tick: (time, dt) ->
 		# These tasks are handled within event callbacks on async io
@@ -275,6 +277,8 @@ class MessageReceiver
 				console.log "Warning: Latency changed - synchronizing time", diff
 				@app.epoch -= (received - @app.lerp) - @app._gameTime(now)
 				@app.rtt = rtt
+
+				@player?.inputDelay = rtt
 
 				# @TODO: Resync the player when changing epoch
 
