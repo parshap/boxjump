@@ -10,50 +10,67 @@ exports.Charge = class Charge extends Action
 
 	can: -> not @player.chargeI.active
 
-	compensate: (delay) ->
-		return if not @player.moveI.active
-
+	compensateStart: (delay) ->
 		# Max delay compensation of 100ms
-		delay = 100 if delay > 100
+		delay = 20 if delay > 20
 
-		console.log "compensating", delay
+		console.log "compensating charge start", delay
+
+		oldVelocity = if @player.moveI.active then @player.moveI else x: 0,  y: 0
 
 		compensationV = Move.compensateMove(
 			delay
-			@player.moveI
-			y: 0, x: @vx
+			oldVelocity
+			{ y: 0, x: @vx }
 		)
 
-		@player.x += compensationV.x
-		@player.y += compensationV.y
+		@player.body.x += compensationV.x
+		@player.body.y += compensationV.y
+
+	compensateStop: (delay) ->
+		# Max delay compensation of 20
+		delay = 20 if delay > 20
+
+		console.log "compensating charge stop", delay
+
+		compensationV = Move.compensateMove(
+			delay
+			{ y: 0, x: @player.body.velocity.x }
+			{ y: 0, x: 0 }
+		)
+
+		@player.body.x += compensationV.x
+		@player.body.y += compensationV.y
 
 	perform: (delay) ->
-		startCharge = =>
+		startCharge = (delay) =>
+			# Compensate for delay
+			@compensateStart delay
+
 			@player.moveI.disable()
-			@player.chargeI.enable()
 
-			@player.chargeI.x = @vx
+			@player.body.velocity.x = @vx
 
-		stopCharge = =>
-			@player.chargeI.disable()
+		stopCharge = (delay) =>
+			# Compensate for delay
+			@compensateStop delay
+
 			@player.moveI.enable()
 
-		# @TODO: Stop charge after running into something
+			@player.body.velocity.x = 0
+
 		# @TODO: Charge only once per airborne
 
 		# Set the current direction if moving
 		@player.set(direction: 1) if @vx > 0
 		@player.set(direction: -1) if @vx < 0
 
-		# Compensate for delay
-		@compensate delay
-
-		stopTime = @player.game.time + 250
-		@player.bindNextTickAfter stopTime, (time, dt) ->
-			stopCharge()
+		stopTime = @player.game.time + 250 - delay
+		@player.bindNextTickAfter stopTime, (time, dt, delay) ->
+			stopCharge delay
 
 		# Start the charge
-		startCharge()
+		startCharge delay
 
 
 exports.ChargeLeft = class ChargeLeft extends Charge

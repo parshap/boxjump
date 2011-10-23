@@ -11,6 +11,10 @@ exports.Action = class Action
 	constructor: (@player, args...) ->
 		@arguments = args
 
+		@initialize()
+
+	initialize: ->
+
 	can: -> true
 
 	predictCan: -> @can()

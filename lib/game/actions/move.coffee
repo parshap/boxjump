@@ -34,8 +34,8 @@ exports.Move = class Move extends Action
 			y: 0, x: @vx
 		)
 
-		@player.x += compensationV.x
-		@player.y += compensationV.y
+		@player.body.x += compensationV.x
+		@player.body.y += compensationV.y
 
 	# Performs the move
 	perform: (delay) ->

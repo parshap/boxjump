@@ -13,6 +13,8 @@ exports.Rect = class Rect extends Body
 		if body not instanceof Rect
 			throw "Can't check collision against given body"
 
+		return false if not @_collides body
+
 		return _colliding @sides(), body.sides()
 
 	# Returns a movement vector to resolve the contact constraint against

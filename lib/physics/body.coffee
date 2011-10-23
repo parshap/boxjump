@@ -1,7 +1,8 @@
+Event = require("../event").Event
 Vector = require("./vector").Vector
 Effect = require("./effect").Effect
 
-exports.Body = class Body
+exports.Body = class Body extends Event
 	world: null
 
 	# A list of known states
@@ -22,6 +23,8 @@ exports.Body = class Body
 	_lastMovedV: null
 
 	constructor: (@x = 0, @y = 0) ->
+		super()
+
 		@world = null # @TODO: Collision logic expects @world
 		@states = []
 		@velocity = new Vector
@@ -101,7 +104,8 @@ exports.Body = class Body
 			moveV = new Vector moveV
 			movedV = moveV.clone()
 
-			collisions = []
+			collisions = null
+			contacts = []
 			moved = false
 
 			while not moved
@@ -116,42 +120,39 @@ exports.Body = class Body
 
 				# check for collisions at new position (and fire collision:before?)
 				for body in @world.bodies.array
-					if @_collides(body)and @colliding(body)
+					if @colliding body
 						collisions.push body
 
 						if @_contacts body
 							moved = false
 							moveV = @resolve body, oldPosition
 							movedV.add moveV
-							break
+							contacts.push [body, moveV]
 
-				#if not sensor
-				# resolve any broken contact constraints
-				# fire any touch/notouch events (for changes)
-				#if sensor
-				# fire any collision/nocollision events (for changes)
+			# Expose colliding bodies
+			# @TODO: Also pass the collision normal vector
+			@trigger "collision", body for body in collisions
+
+			# Expose resolved contacts
+			# @TODO: There may be extra bodies in the list when one
+			# contact resolves the movement to no longer be contacting
+			# a previous contact.
+			for [body, normalV] in contacts
+				@trigger "contact", body, normalV
+
+			# Airborne unless some contact constraint pushed us upward
+			@airborne = ! contacts.some ([body, normalV]) -> normalV.y < 0
+
+			# Reset vertical velocity if we've landed
+			@velocity.y = 0 if not @airborne
+
+			# Reset horizontal velocity too
+			if contacts.some(([body, normalV]) -> normalV.x != 0)
+				@velocity.x = 0
 
 			return movedV
 
 		movedV = @_lastMovedV = move moveV
-
-		# If we attempted to move down, but only went partially or 0 (hit ground)
-		if moveV.y > 0 and movedV.y < moveV.y
-			@airborne = false
-
-		# If we attempt to move down and went the full way
-		else if moveV.y > 0 and movedV.y == moveV.y
-			@airborne = true
-
-		# If we moved upwards at all
-		else if movedV.y < 0.000001
-			@airborne = true
-
-		# Reset vertical velocity if we've landed
-		@velocity.y = 0 if not @airborne
-
-		# Or hit a ceiling
-		@velocity.y = 0 if moveV.y < 0 and movedV.y > moveV.y
 
 	# Returns whether or not this body *can* collide with the given body
 	_collides: (body) ->

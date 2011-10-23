@@ -148,7 +148,7 @@ exports.Player = class Player extends Model
 
 		@trigger "schedule-action", action, performTime
 
-	performAction: (action, delay) ->
+	performAction: (action, delay=0) ->
 		action.perform delay
 
 		@trigger "action", action

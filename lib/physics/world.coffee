@@ -28,3 +28,17 @@ exports.World = class World
 		# @TODO: Gravity?
 
 		return this
+
+	# Returns a list of bodies in the world that are colliding with the
+	# given body
+	collidingWith: (body) ->
+		bodies = []
+
+		@bodies.forEach (otherBody) ->
+			if body._collides otherBody
+				console.log "checking against", otherBody
+				if body.colliding otherBody
+					bodies.push otherBody
+					console.log "colliding against other"
+
+		return bodies
