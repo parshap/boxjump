@@ -1,3 +1,24 @@
+Box Jump is an experiment with HTML5 games. It is an online multiplayer
+action game using the DOM for rendering and WebSockets for
+communication. Players move around, jump between platforms, and attack
+opponent players. The objective is to stay alive and kill other players.
+The vision is for Box Jump to be a persistent massively-multiplayer game
+with an automatically-scaling programatically-generated map.
+
+Interesting parts of the source include:
+
+ * [2D physics simulation](lib/physics) with collision detection and
+   resolution for AABBs
+ * [Client-server game state
+   synchronization](https://developer.valvesoftware.com/wiki/Source_Multiplayer_Networking]
+   using interpolation, prediction, and other techniques
+   [[1]](lib/server.coffee) [[2]](lib/client.coffee)
+   [[3]](lib/game/actions/action.coffee)
+ * [Node.js game server](lib/net) using [MessagePack](http://msgpack.org) over
+   WebSockets
+ * Model-View decoupling of [game logic](lib/game) and
+   [rendering](lib/view) using events to communicate
+
 # Components
 
  * App
