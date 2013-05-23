@@ -10,7 +10,7 @@ Interesting parts of the source include:
  * [2D physics simulation](lib/physics) with collision detection and
    resolution for AABBs
  * [Client-server game state
-   synchronization](https://developer.valvesoftware.com/wiki/Source_Multiplayer_Networking]
+   synchronization](https://developer.valvesoftware.com/wiki/Source_Multiplayer_Networking)
    using interpolation, prediction, and other techniques
    [[1]](lib/server.coffee) [[2]](lib/client.coffee)
    [[3]](lib/game/actions/action.coffee)
