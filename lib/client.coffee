@@ -344,6 +344,13 @@ class MessageReceiver
 
 			@app._actionProxies.push { player, action, performTime }
 
+	# Health
+	0x15: (message) ->
+		[time, playerid, health] = message.arguments
+
+		if player = @app.game.getPlayer playerid
+			player.set health: health
+
 
 class MessageSender
 	constructor: (@app) ->

@@ -81,6 +81,8 @@ exports.Punch = class Punch extends Action
 
 	resolveHits: ->
 		console.log "punch hit players", @hitPlayers.length
+		for player in @hitPlayers
+			player.set health: player.get("health") - 50
 
 	stopMove: (delay=0) ->
 		@player.performAction new MoveNone(@player), delay

@@ -122,7 +122,31 @@ optional additional typed parameters.
 This message is sent as a successful reply to a Join Request message.
 The only parameter is given the joining player's playerid.
 
-#### PlayerInput (`0x00`)
+#### ChatMessage (`0x0A`)
+This message is sent to relay chat messages. The client sends this to
+the server when the client enters a chat message, and the server
+broadcasts it to all clients (including the original sender).
+
+There are two arguments:
+
+ * Player ID
+ * Message (string)
+
+#### GameState (`0x10`)
+This message is sent from the server to the clients to inform them about
+the current game state. This message contains the positions and
+velocities of each player in the game.
+
+The first parameter is the game time this state information is from.
+An additional five parameters are sent for each player:
+
+ * Player ID
+ * X position
+ * Y position
+ * X velocity
+ * Y velocity
+
+#### PlayerInput (`0x11`)
 This message is sent from clients to the server to inform the server of
 the sending client's player's input state. This message has a single
 parameter which is a 1-byte integer who's rightmost 4 bits represent the
@@ -137,19 +161,31 @@ integer value represented in the variable `value`.
  * Down: `value & (1 << 1)`
  * Left: `value & (1 << 0)`
 
-#### GameState (`0x01`)
-This message is sent from the server to the clients to inform them about
-the current game state. This message contains the positions and
-velocities of each player in the game.
+#### PlayerLeave (`0x12`)
+This message is sent from the server to all clients when a player
+leaves. The only argument is the leaving player's id.
 
-The first parameter is the game time this state information is from.
-An additional five parameters are sent for each player:
+#### ActionRequest (`0x13`)
+This message is sent from a client to the server to request performing
+an action. The arguments are the action id and any additional action
+arguments.
 
- * Player ID
- * X position
- * Y position
- * X velocity
- * Y velocity
+#### Action (`0x14`)
+This message is sent from the server to clients to inform them about an
+action taking place. Message arguments are:
+
+ * The time the action was performed
+ * The id of the player performing the action
+ * The action id
+ * Additional action arguments...
+
+#### Health (`0x15`)
+This message is sent from the server to clients to update a player's
+current health. Message arguments are:
+
+ * The time
+ * Player id
+ * Health value
 
 ### Encoding
 
@@ -185,8 +221,6 @@ trip=50ms
 
  * Synchronized time http://www.codewhore.com/howto1.html
 
- * Packet encoding
-
  * The server needs to send periodic state updates, but also needs to send
    a packet *NOW* - should they piggyback? when?
 
@@ -209,15 +243,15 @@ physics advance algorithm:
 
  - for each body
    move body
-   - pos = pos + 0.5*v*dt
-   - v = v + a*dt
+   - pos = pos + 0.5 * v * dt
+   - v = v + a * dt
    - pos = pos + 0.5 * v * dt
 
    check for collisions at new position (and fire collision:before?)
-   
+
    if not sensor
        resolve any broken contact constraints
-       
+
        fire any touch/notouch events (for changes)
 
    if sensor

@@ -32,6 +32,7 @@ exports.Application = class Application
 		@_initializeReceiver()
 		@_initializeGame()
 		@_initializeSendActions()
+		@_initializeSendHealths()
 
 	_initializeGame: ->
 		@game = new Game()
@@ -109,7 +110,28 @@ exports.Application = class Application
 		# Send any output to clients
 		@_sendStates time
 		@_sendActions time
+		@_sendHealths time
 		@net.flush()
+
+	# Health
+
+	_healthChangedPlayers: null
+
+	_initializeSendHealths: ->
+		@_healthChangedPlayers = []
+
+		@game.players.bind "add", (player) =>
+			# @TODO: listener leak?
+			player.bind "change:health", =>
+				@_healthChangePlayers.push player
+
+	_sendHealths: (time) ->
+		for player in @_healthChangedPlayers
+			@net.send new Message 0x15, [
+				time, player.id, player.get("health")
+			]
+
+		@_healthChangePlayers = []
 
 	# The last time updates were sent
 	_lastStatesSent: -Infinity
