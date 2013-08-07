@@ -2,7 +2,34 @@ Rect = require("../physics/rect").Rect
 Vector = require("../physics/vector").Vector
 Model = require("../model").Model
 List = require("../list").List
+Effect = require("../physics/effect").Effect
 
+class PlayerBody extends Rect
+	constructor: ->
+		super
+
+		@on "collide", (body, desired) =>
+			desired.set @resolve body, desired
+
+		# @TODO body needs to keep track of this "effect" for net code
+		@moving = new MoveEffect @
+
+class MoveEffect extends Effect
+	velocity: null
+	constructor: (@body) ->
+		@velocity = Vector.zero()
+		super(
+			=> @body.impulse.add @velocity
+			=> @body.impulse.sub @velocity
+		)
+
+	set: (velocity) ->
+		oldVelocity = @velocity
+		@velocity = velocity
+		if @enabled
+			diff = new Vector(@velocity).sub oldVelocity
+			@body.impulse.add diff
+			@body.trigger "effect"
 
 exports.Player = class Player extends Model
 	actions:
@@ -36,34 +63,16 @@ exports.Player = class Player extends Model
 
 	initialize: ->
 		# Create a body for this player
-		@body = new Rect(
-			@get("x")
-			@get("y")
-			@get("width")
-			@get("height")
+		@body = new PlayerBody(
+			new Vector x: @get("x"), y: @get("y")
+			new Vector x: @get("width") / 2, y: @get("height") / 2
 		)
 
 		@body.fallAffinity = 2
 
 		# Give the body a back reference to this player
 		# @TODO: Is there a way to avoid this?
-		# @TODO: Circular references need to be manually cleaned up
 		@body.player = @
-
-		# Collide with everything (@TODO ?)
-		@body.collides -> true
-
-		# No contact constraint between players
-		@body.contacts (body) ->
-			return ! body.player
-
-		# @TODO: The body probably needs a back reference to this player
-
-		# Create an impulse effect that will be used for movement
-		@moveI = @body.impulse x: 0, y: 0
-
-		# Create an impulse effect that will be used for charging
-		@chargeI = @body.impulse(x: 0, y: 0).disable()
 
 		@_initializeTicks()
 		@_initializeCooldowns()
@@ -123,11 +132,16 @@ exports.Player = class Player extends Model
 
 	# ## Actions
 
+	# Predict the results of the player performing the action
+	# This is called as a action packet is sent to the server for the action
+	# to be performed.
 	predictAction: (action) ->
 		action.predict()
 
 		@trigger "predict-action", action
 
+	# Called by the client to perform the side effects of an action that has
+	# occured
 	proxyAction: (time, action, performTime) ->
 		performTime = action.scheduleProxy time, performTime
 
@@ -139,6 +153,7 @@ exports.Player = class Player extends Model
 
 		@trigger "schedule-action", action, performTime
 
+	# Called by the server when a player has performed an action
 	requestAction: (time, action, requestTime, delay) ->
 		performTime = action.schedule time, requestTime, delay
 
@@ -158,5 +173,5 @@ exports.Player = class Player extends Model
 
 		@body.tick time, dt
 
-
 exports.PlayerList = class PlayerList extends List
+	getBodies: -> @map (player) -> player.body

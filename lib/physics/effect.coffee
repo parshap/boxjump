@@ -1,13 +1,25 @@
+Event = require("../event").Event
 Vector = require("./vector").Vector
+chain = require("chainfn")
 
+exports.Effect = class Effect extends Event
+	enabled: false
 
-exports.Effect = class Effect extends Vector
-	active: true
+	constructor: (enable, disable) ->
+		super
+		@on "enable", enable
+		@on "disable", disable
 
-	enable: ->
-		@active = true
-		return this
+		@enable()
 
-	disable: ->
-		@active = false
-		return this
+	enable: chain ->
+		if not @enabled
+			@trigger "enable"
+			@trigger "update"
+			@enabled = true
+
+	disable: chain ->
+		if @enabled
+			@trigger "disable"
+			@trigger "update"
+			@enabled = false

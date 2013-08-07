@@ -15,7 +15,7 @@ exports.World = class World
 		body.world = @
 
 		# Add the world gravity as a force
-		body.force @gravityF
+		body.force.add @gravityF
 
 		@bodies.add body
 

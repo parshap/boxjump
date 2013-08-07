@@ -238,12 +238,8 @@ exports.Application = class Application
 			states.push
 				id: player.id
 				time: time
-				position:
-					x: player.body.x
-					y: player.body.y
-				velocity:
-					x: player.body._lastMovedV.x
-					y: player.body._lastMovedV.y
+				position: player.body.position.clone()
+				velocity: player.body._lastMovedV.clone()
 
 		return states
 

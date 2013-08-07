@@ -45,15 +45,18 @@ exports.Punch = class Punch extends Action
 	perform: (delay) ->
 		width = 2.9
 		height = 1.4
-		x = @player.body.x + (width / 2)
-		y = @player.body.y + 0.1
+		x = @player.body.position.x + (width / 2)
+		y = @player.body.position.y + 0.1
 		hitBody = new Rect x, y, width, height
 
 		# Collide with players only
-		hitBody.collides (body) => body.player? and body.player != @player
+		hitBody.on "collide", (body) =>
+			@hitPlayers.push body if body.player? \
+				and body.player != @player \
+				and body.player not in @hitPlayers
 
-		onTick = =>
-			@checkHits hitBody
+		onTick = ->
+			hitBody.collide @game.players.getBodies()
 
 		stopTime = @player.game.time + 50
 
@@ -72,12 +75,6 @@ exports.Punch = class Punch extends Action
 	predict: ->
 		@player.setCooldown("move", @player.game.time + 800)
 		@stopMove()
-
-	checkHits: (body) ->
-		console.log "checking hits"
-		for otherBody in @player.game.world.collidingWith body
-			if otherBody.player not in @hitPlayers
-				@hitPlayers.push otherBody.player
 
 	resolveHits: ->
 		console.log "punch hit players", @hitPlayers.length

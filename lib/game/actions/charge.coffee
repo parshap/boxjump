@@ -5,10 +5,11 @@ Move = require("./move").Move
 exports.Charge = class Charge extends Action
 	vx: 0
 
-	constructor: (@player, @vx) ->
-		super @player
+	constructor: (player, @vx) ->
+		super player
+		@impulse = @player.body.impulse(x: @vx, y: 0).disable()
 
-	can: -> not @player.chargeI.active
+	can: -> not @impulse.active
 
 	compensateStart: (delay) ->
 		# Max delay compensation of 100ms
@@ -16,16 +17,11 @@ exports.Charge = class Charge extends Action
 
 		console.log "compensating charge start", delay
 
-		oldVelocity = if @player.moveI.active then @player.moveI else x: 0,  y: 0
-
-		compensationV = Move.compensateMove(
+		@player.body.position.add Move.compensateMove(
 			delay
-			oldVelocity
+			@player.body.velocity
 			{ y: 0, x: @vx }
 		)
-
-		@player.body.x += compensationV.x
-		@player.body.y += compensationV.y
 
 	compensateStop: (delay) ->
 		# Max delay compensation of 20
@@ -33,31 +29,26 @@ exports.Charge = class Charge extends Action
 
 		console.log "compensating charge stop", delay
 
-		compensationV = Move.compensateMove(
+		@player.body.position.add Move.compensateMove(
 			delay
-			{ y: 0, x: @player.body.velocity.x }
-			{ y: 0, x: 0 }
+			new Vector x: @player.body.velocity.x, y: 0
+			Vector.zero()
 		)
-
-		@player.body.x += compensationV.x
-		@player.body.y += compensationV.y
 
 	perform: (delay) ->
 		startCharge = (delay) =>
 			# Compensate for delay
 			@compensateStart delay
 
-			@player.moveI.disable()
-
-			@player.body.velocity.x = @vx
+			@player.moving.disable()
+			@impulse.enable()
 
 		stopCharge = (delay) =>
 			# Compensate for delay
 			@compensateStop delay
 
-			@player.moveI.enable()
-
-			@player.body.velocity.x = 0
+			@player.moving.enable()
+			@impulse.disable()
 
 		# @TODO: Charge only once per airborne
 

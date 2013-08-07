@@ -9,14 +9,16 @@ exports.Jump = class Jump extends Action
 
 	proxy: true
 
-	can: -> ! @player.body.airborne
+	can: -> not @player.body.airborne
 
 	perform: (delay) ->
 		[power] = @arguments
-
-		jumpV = new Vector x: 0, y: -@player.jump * power
-
-		@player.body.velocity.add jumpV
+		console.log "jump", @player.velocity
+		# @TODO Set velocity to absolute value instead of subtracting to
+		# to avoid physics issues when jumping while body already has a
+		# velocity
+		@player.body.velocity.y -= @player.jump * power
+		@player.body.trigger "effect"
 
 	scheduleProxy: (time, performTime) ->
 		early = performTime - time

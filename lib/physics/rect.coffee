@@ -2,42 +2,28 @@ Vector = require("./vector").Vector
 Body = require("./body").Body
 
 exports.Rect = class Rect extends Body
-	constructor: (x, y, @w = 0, @h = 0) ->
-		super x, y
+	constructor: (position, @size = Vector.zero()) ->
+		super position
 
 	sides: ->
-		return _sides @x, @y, @w / 2, @h / 2
+		return _sides @position.x, @position.y, @size.x, @size.y
 
-	# Returns whether or not this body is colliding with the given body
-	colliding: (body) ->
+	collide: (body, desired) ->
 		if body not instanceof Rect
-			throw "Can't check collision against given body"
+			throw new Error "Body must be Rect"
 
-		return false if not @_collides body
-
-		return _colliding @sides(), body.sides()
+		newPos = @position.clone().add desired
+		sides = _sides newPos.x, newPos.y, @size.x, @size.y
+		if _colliding sides, body.sides()
+			@trigger "collide", body, desired
 
 	# Returns a movement vector to resolve the contact constraint against
 	# the given body caused by the move from the given old position
-	resolve: (body, oldPosition) ->
+	resolve: (body, desired) ->
 		if body not instanceof Rect
-			throw "Can't check collision against given body"
+			throw new Error "Body must be Rect"
 
-		# Create the arguments needed for _resolve
-		# rect1 = this body at the old position
-		# rect2 = the contacting body
-		# v = the movement vector causing the contact
-		rect1 = _sides oldPosition.x, oldPosition.y, @w / 2, @h / 2
-		rect2 = body.sides()
-		moveV = new Vector({ @x, @y }).sub oldPosition
-
-		# _resolve will return a new movement vector that would not cause
-		# the contact by rect1
-		resolvedV = _resolve rect1, rect2, moveV
-
-		# We will return the movement needed to correct the existing
-		# contact
-		return resolvedV.sub moveV
+		return _resolve @sides(), body.sides(), desired
 
 
 # Returns the four sides of a rect with the given position and half

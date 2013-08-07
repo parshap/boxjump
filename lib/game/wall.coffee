@@ -1,7 +1,7 @@
 physics = require "../physics"
 Model = require("../model").Model
 List = require("../list").List
-
+Vector = require("../physics/vector").Vector
 
 exports.Wall = class Wall extends Model
 	defaults:
@@ -18,13 +18,9 @@ exports.Wall = class Wall extends Model
 			height: Math.abs y2 - y1
 
 	initialize: ->
-		# Create a body for this player
 		@body = new physics.Rect(
-			@get("x")
-			@get("y")
-			@get("width")
-			@get("height")
+			new Vector x: @get("x"), y: @get("y")
+			new Vector x: @get("width") / 2, y: @get("height") / 2
 		)
-
 
 exports.WallList = class WallList extends List

@@ -1,9 +1,8 @@
 Vector = require("../../physics/vector").Vector
 Action = require("./action").Action
 
-
 exports.Move = class Move extends Action
-	vx: 0
+	velocity: null
 
 	@compensateMove: (delay, oldMoveI, newMoveI) ->
 		v = new Vector
@@ -15,27 +14,25 @@ exports.Move = class Move extends Action
 
 		return v
 
-	constructor: (@player, @vx) ->
-		super @player
+	constructor: (player, @velocity) ->
+		super player
 
 	can: -> not @player.onCooldown "move"
 
 	compensate: (delay) ->
-		return if not @player.moveI.active
+		return if delay is 0
+		return if not @player.body.moving.enabled
 
 		# Max delay compensation of 100ms
 		delay = 100 if delay > 100
 
 		console.log "compensating", delay
 
-		compensationV = Move.compensateMove(
+		@player.body.position.add Move.compensateMove(
 			delay
-			@player.moveI
-			y: 0, x: @vx
+			@player.body.moving.velocity
+			@velocity
 		)
-
-		@player.body.x += compensationV.x
-		@player.body.y += compensationV.y
 
 	# Performs the move
 	perform: (delay) ->
@@ -43,12 +40,11 @@ exports.Move = class Move extends Action
 		@compensate delay
 
 		# Set the current direction if moving
-		@player.set(direction: 1) if @vx > 0
-		@player.set(direction: -1) if @vx < 0
+		@player.set direction: 1 if @velocity.x > 0
+		@player.set direction: -1 if @velocity.x < 0
 
 		# Set the movement impulse vector
-		@player.moveI.x = @vx
-
+		@player.body.moving.set @velocity
 
 exports.MoveNone = class MoveNone extends Move
 	id: 0x00
@@ -57,18 +53,16 @@ exports.MoveNone = class MoveNone extends Move
 	can: -> true
 
 	constructor: (@player) ->
-		super @player, 0
-
+		super @player, Vector.zero()
 
 exports.MoveLeft = class MoveLeft extends Move
 	id: 0x01
 
 	constructor: (@player) ->
-		super @player, -@player.speed
-
+		super @player, new Vector x: -@player.speed, y: 0
 
 exports.MoveRight = class MoveRight extends Move
 	id: 0x02
 
 	constructor: (@player) ->
-		super @player, @player.speed
+		super @player, new Vector x: @player.speed, y: 0

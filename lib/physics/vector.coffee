@@ -3,7 +3,10 @@
 exports.Vector = class Vector
 	@zero: -> return new @
 
-	constructor: ({@x, @y} = {x: 0, y: 0}) ->
+	constructor: (val = {x: 0, y: 0}) ->
+		@set val
+
+	set: ({@x, @y}) -> @
 
 	add: ({x, y}) ->
 		@x += x
