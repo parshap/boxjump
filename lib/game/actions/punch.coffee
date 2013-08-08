@@ -28,7 +28,7 @@ exports.Punch = class Punch extends Action
 		performTime = time if performTime < time
 
 		cdTime = performTime + 800
-		@player.setCooldown "move", performTime
+		@player.setCooldown "move", cdTime
 
 		@stopMove delay
 
