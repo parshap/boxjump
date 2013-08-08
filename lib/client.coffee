@@ -246,10 +246,15 @@ class MessageReceiver
 		if message.arguments.length == 2
 			# @TODO: Some statistical analysis
 			# http://codewhore.com/howto1.html
+			# sent =  Local time when original sync message was sent
+			# received = Server time when original sync message was received
 			[sent, received] = message.arguments
 			now = new Date().getTime()
+			# rtt = round trip time to send message and receive response
 			rtt = now - sent
-			diff = @app._gameTime(now) - (received - @app.lerp)
+			proxyGameTime = received - @app.lerp
+			gameTime = @app._gameTime(now)
+			diff = gameTime - proxyGameTime
 
 			console.log "Sync RTT", rtt, "Sync Diff", diff
 
@@ -260,7 +265,7 @@ class MessageReceiver
 
 			if Math.abs(diff) > 50
 				console.log "Warning: Latency changed - synchronizing time", diff
-				@app.epoch -= (received - @app.lerp) - @app._gameTime(now)
+				@app.epoch += diff
 				@app.rtt = rtt
 
 				@player?.inputDelay = rtt
