@@ -270,7 +270,14 @@ exports.Application = class Application
 
 	_processActionRequests: (time) ->
 		for { player, action, requestTime, client } in @_actionRequests
-			delay = time - requestTime - client.get("lerp") - client.get("rtt")
+			# time = current simulation time
+			# requestTime = proxy simulation time when action performed
+			# proxyFactor = how behind the proxy simulation time is
+			# proxyTime = current proxy simulation time
+			# delay = how late we are performing the action
+			proxyFactor = client.get("lerp") + client.get("rtt")
+			proxyTime = requestTime + proxyFactor
+			delay = time - proxyTime
 
 			player.requestAction time, action, requestTime, delay
 
