@@ -29,7 +29,7 @@ exports.Vector = class Vector
 
 	negate: -> return @mul -1
 
-	normalize: -> return @div @length
+	normalize: -> return @div @length()
 
 	clone: -> return new @constructor x: @x, y: @y
 
