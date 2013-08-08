@@ -275,7 +275,7 @@ exports.Application = class Application
 			# proxyFactor = how behind the proxy simulation time is
 			# proxyTime = current proxy simulation time
 			# delay = how late we are performing the action
-			proxyFactor = client.get("lerp") + client.get("rtt")
+			proxyFactor = client.get("lerp") + (client.get("rtt") / 2)
 			proxyTime = requestTime + proxyFactor
 			delay = time - proxyTime
 
