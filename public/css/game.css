@@ -1,3 +1,7 @@
+html {
+	background: #002b36;
+}
+
 #viewport {
 	position: absolute;
 	overflow: hidden;
@@ -11,7 +15,7 @@
 	top: 50%;
 	margin-top: -320px;
 
-	border: 2px solid black;
+	background: #fdf6e3;
 
 	-webkit-user-select: none;
 	-khtml-user-select: none;
@@ -243,5 +247,5 @@
 #viewport > .wall {
 	z-index: 1;
 
-	background: #555;
+	background: #002b36;
 }
