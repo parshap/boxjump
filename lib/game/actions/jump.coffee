@@ -23,6 +23,7 @@ exports.Jump = class Jump extends Action
 			@player.trigger "pre-jump"
 
 		# We're early to play the animatio, play in a bit
+		# @TODO Maybe this should trigger on a tick
 		else if early > @DELAY
 			setTimeout (=>
 				@player.trigger "pre-jump"
