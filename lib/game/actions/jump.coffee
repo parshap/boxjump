@@ -13,12 +13,7 @@ exports.Jump = class Jump extends Action
 
 	perform: (delay) ->
 		[power] = @arguments
-		console.log "jump", @player.velocity
-		# @TODO Set velocity to absolute value instead of subtracting to
-		# to avoid physics issues when jumping while body already has a
-		# velocity
-		@player.body.velocity.y -= @player.jump * power
-		@player.body.trigger "effect"
+		@player.body.jump power
 
 	scheduleProxy: (time, performTime) ->
 		early = performTime - time

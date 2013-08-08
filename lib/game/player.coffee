@@ -5,6 +5,8 @@ List = require("../list").List
 Effect = require("../physics/effect").Effect
 
 class PlayerBody extends Rect
+	JUMP_SPEED = 14
+
 	constructor: ->
 		super
 
@@ -13,6 +15,13 @@ class PlayerBody extends Rect
 
 		# @TODO body needs to keep track of this "effect" for net code
 		@moving = new MoveEffect @
+
+	jump: (power) ->
+		# @TODO Set velocity to absolute value instead of subtracting to
+		# to avoid physics issues when jumping while body already has a
+		# velocity
+		@velocity.y -= JUMP_SPEED * power
+		@player.trigger "effect"
 
 class MoveEffect extends Effect
 	velocity: null
@@ -42,8 +51,6 @@ exports.Player = class Player extends Model
 		0x10: require("./actions/punch").Punch
 
 	speed: 10
-
-	jump: 14
 
 	inputDelay: 0
 
