@@ -167,21 +167,6 @@ An additional five parameters are sent for each player:
  * X velocity
  * Y velocity
 
-#### PlayerInput (`0x11`)
-This message is sent from clients to the server to inform the server of
-the sending client's player's input state. This message has a single
-parameter which is a 1-byte integer who's rightmost 4 bits represent the
-current state of the player's input.
-
-The following input states are represented by each bit in order (from
-left to right). An example to how to read the truthy value having an
-integer value represented in the variable `value`.
-
- * Up: `value & (1 << 3)`
- * Right: `value & (1 << 2)`
- * Down: `value & (1 << 1)`
- * Left: `value & (1 << 0)`
-
 #### PlayerLeave (`0x12`)
 This message is sent from the server to all clients when a player
 leaves. The only argument is the leaving player's id.

@@ -355,16 +355,6 @@ class MessageSender
 		playerid = 0
 		@app.net.send new Message 0x0A, [playerid, text]
 
-	# Player Input
-	0x11: ({up, right, down, left}) ->
-		state = 0
-		state |= (1 << 3) if up
-		state |= (1 << 2) if right
-		state |= (1 << 1) if down
-		state |= (1 << 0) if left
-
-		@app.net.send new Message 0x11, [state]
-
 	# Player Action Request
 	0x13: (requestTime, action) ->
 		@app.net.send new Message 0x13, [requestTime, action.id, action.arguments...]

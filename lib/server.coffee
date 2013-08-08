@@ -312,18 +312,6 @@ class MessageReceiver
 		# @TODO: rate limit?
 		@app.net.send message
 
-	# Player Input
-	0x11: (client, message) ->
-		if player = @app.game.getPlayer client.get("playerid")
-			[state] = message.arguments
-
-			up = !! (state & (1 << 3))
-			right = !! (state & (1 << 2))
-			down = !! (state & (1 << 1))
-			left = !! (state & (1 << 0))
-
-			player.input { up, right, down, left }
-
 	# Action Request
 	0x13: (client, message) ->
 		if player = @app.game.getPlayer client.get("playerid")
