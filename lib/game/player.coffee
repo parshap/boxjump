@@ -39,9 +39,6 @@ exports.Player = class Player extends Model
 
 		0x03: require("./actions/jump").Jump
 
-		0x04: require("./actions/charge").ChargeLeft
-		0x05: require("./actions/charge").ChargeRight
-
 		0x10: require("./actions/punch").Punch
 
 	speed: 10
