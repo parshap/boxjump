@@ -10,12 +10,11 @@ Message = require("./message").Message
 exports.Server = class Server extends Event
 	constructor: ->
 		@clients = new ClientList()
-
 		super()
 
 	listen: (server) ->
-		@io = sio.listen server
-
+		@io = sio.listen(server)
+		@io.set "log level", 2
 		@io.sockets.on "connection", (socket) =>
 			client = new Client
 				socket: socket
