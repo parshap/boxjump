@@ -1,3 +1,16 @@
+# Jump Simulation
+
+game time = 10
+proxy time = 0
+
+g=10 p=0 client JUMP
+g=11 p=1 server recv JUMP@11
+  time = 11
+  requestTime = 0
+  delay = 11 - 0 - 10 - 1 = 0
+g=12 p=2 other clients recv JUMP@11
+
+
 ## Actions net delay
 
 
@@ -8,9 +21,9 @@ S	recv	punch		Ts=100+50=150
 S	exec	punch T=200	Ts=150			schedule punch | do jump
 C1	recv	punch T=200	Tc=100			schedule punch | n/a
 
-20 ms latency
+2la0 ms latency
 
-C2	req		punch		Tc=0
+C2	req		pun0ch		Tc=0
 S	recv	punch		Ts=100+20=120
 S	exec	punch T=200	Ts=120
 C1	recv	punch T=200	Tc=40
