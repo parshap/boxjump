@@ -143,6 +143,12 @@ optional additional typed parameters.
 This message is sent as a successful reply to a Join Request message.
 The only parameter is given the joining player's playerid.
 
+#### PlayerPosition (`0x03`)
+Sent from client to server to tell server exact position.
+
+ * X position
+ * Y position
+
 #### ChatMessage (`0x0A`)
 This message is sent to relay chat messages. The client sends this to
 the server when the client enters a chat message, and the server

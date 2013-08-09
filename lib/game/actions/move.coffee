@@ -28,11 +28,11 @@ exports.Move = class Move extends Action
 
 		console.log "compensating", delay
 
-		@player.body.position.add Move.compensateMove(
+		@player.body.correctTo Move.compensateMove(
 			delay
 			@player.body.moving.velocity
 			@velocity
-		)
+		).add @player.body.position
 
 	# Performs the move
 	perform: (delay) ->

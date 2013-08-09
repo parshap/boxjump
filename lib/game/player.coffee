@@ -7,6 +7,9 @@ Effect = require("../physics/effect").Effect
 class PlayerBody extends Rect
 	JUMP_SPEED = 14
 
+	moving: null
+	_correction: null
+
 	constructor: ->
 		super
 
@@ -16,12 +19,20 @@ class PlayerBody extends Rect
 		# @TODO body needs to keep track of this "effect" for net code
 		@moving = new MoveEffect @
 
+		@_correction = Vector.zero()
+
 	jump: (power) ->
 		# @TODO Set velocity to absolute value instead of subtracting to
 		# to avoid physics issues when jumping while body already has a
 		# velocity
 		@velocity.y -= JUMP_SPEED * power
 		@player.trigger "effect"
+
+	correctTo: (position) ->
+		currentCorrectedPosition = new Vector(@position).add @_correction
+		diff = new Vector(position).sub currentCorrectedPosition
+		# @TODO Max correction
+		@_correction.add diff
 
 class MoveEffect extends Effect
 	velocity: null

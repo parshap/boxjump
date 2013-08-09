@@ -2,6 +2,7 @@ _ = require "underscore"
 net = require "./net/server"
 Game = require("./game/game").Game
 Message = require("./net/message").Message
+Vector = require("./physics/vector").Vector
 
 
 exports.Application = class Application
@@ -12,6 +13,7 @@ exports.Application = class Application
 
 	tickTime: null
 
+	_messages: null
 	_actionRequests: null
 
 	_actionsToSend: null
@@ -21,6 +23,7 @@ exports.Application = class Application
 	constructor: ->
 		@_playerCount = 0
 
+		@_messages = []
 		@_actionRequests = []
 
 		@_statesToSend = []
@@ -98,7 +101,8 @@ exports.Application = class Application
 	tick: (time, dt) ->
 		@game.time = time
 
-		# Process input from clients
+		# Process input
+		@_processInput()
 		@_processActionRequests time
 
 		# Update the game state
@@ -268,6 +272,15 @@ exports.Application = class Application
 
 		@_actionsToSend = []
 
+	_processInput: ->
+		for [client, message] in @_messages
+			switch message.id
+				when 0x03
+					if player = @game.getPlayer client.get("playerid")
+						[x, y] = message.arguments
+						player.body.correctTo new Vector { x, y }
+		@_messages = []
+
 	_processActionRequests: (time) ->
 		for { player, action, requestTime, client } in @_actionRequests
 			# time = current simulation time
@@ -318,6 +331,10 @@ class MessageReceiver
 		# @TODO: Validate the message's playerid
 		# @TODO: rate limit?
 		@app.net.send message
+
+	# Position
+	0x03: (client, message) ->
+		@app._messages.push [client, message]
 
 	# Action Request
 	0x13: (client, message) ->

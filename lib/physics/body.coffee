@@ -75,6 +75,12 @@ exports.Body = class Body extends Event
 		# Multiply movement by fallAffinity if we're falling
 		desired.y *= @fallAffinity if desired.y > 0
 
+		# Add correction
+		if @_correction
+			# @TODO Max correction per frame
+			desired.add @_correction
+			@_correction.set x: 0, y: 0
+
 		# Perform collisions
 		origDesired = desired.clone()
 		for body in @world.bodies.array when body isnt @

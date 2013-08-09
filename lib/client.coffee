@@ -229,6 +229,9 @@ exports.Application = class Application extends Event
 		for action in @_actionRequests
 			# Predict if the player can perform this action
 			if action.predictCan()
+				# Update the server with our static position before the action
+				@sender[0x03] @player.body.position
+
 				# Request the server to perform this action
 				@sender[0x13] time, action
 
@@ -354,6 +357,10 @@ class MessageSender
 		# @TODO: Get real playerid
 		playerid = 0
 		@app.net.send new Message 0x0A, [playerid, text]
+
+	# Position
+	0x03: (position) ->
+		@app.net.send new Message 0x03, [position.x, position.y]
 
 	# Player Action Request
 	0x13: (requestTime, action) ->
