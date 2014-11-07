@@ -1,11 +1,35 @@
 {
-	"name": "game",
-	"version": "0.0.0",
-	"dependencies": {
-		"underscore": "1.x",
-		"connect": "1.x",
-		"socket.io": "0.8.x",
-		"browserify": "1.x",
-		"coffeepack": ""
-	}
+  "name": "boxjump",
+  "version": "0.0.0",
+  "dependencies": {
+    "browserify": "1.x",
+    "coffeepack": "",
+    "connect": "1.x",
+    "socket.io": "0.8.x",
+    "underscore": "1.x"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "description": "Multiplayer html5 game",
+  "main": "server.js",
+  "devDependencies": {
+    "coffee-script": "^1.8.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/parshap/boxjump.git"
+  },
+  "keywords": [
+    "game",
+    "multiplayer",
+    "netcode",
+    "physics"
+  ],
+  "author": "Parsha Pourkhomami",
+  "license": "Public Domain",
+  "bugs": {
+    "url": "https://github.com/parshap/boxjump/issues"
+  },
+  "homepage": "https://github.com/parshap/boxjump"
 }
