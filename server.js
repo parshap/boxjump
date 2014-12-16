@@ -1,3 +1,7 @@
+"use strict";
+
+require("coffee-script/register");
+
 var connect = require("connect"),
 	browserify = require("browserify"),
 	server = require("./lib/server"),
